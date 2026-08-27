@@ -29,22 +29,37 @@ espelhar uma resposta de rede.
 ## 3. Expo SecureStore — persistência sensível
 
 `src/services/secure-storage.ts` encapsula `expo-secure-store`. É o único
-lugar por onde um token deve passar para ser persistido entre sessões do
-app. Zustand mantém uma cópia em memória (para o cliente HTTP ler
-`useAuthStore.getState().token` de forma síncrona), mas a fonte durável é
-sempre o SecureStore — nunca `AsyncStorage`.
+lugar por onde o **refresh token** passa para ser persistido entre sessões
+do app — nunca `AsyncStorage`, nunca `zustand/persist`, nunca um arquivo
+comum. O **access token** vive só em memória, em `useAuthStore.accessToken`
+(nunca é escrito em disco); é ele que o cliente HTTP injeta como
+`Authorization: Bearer` (ver [api-client.md](api-client.md)).
 
-Fluxo hoje (stub, sem backend de auth ainda):
+Fluxo real (`gestaofut-api` já expõe `/auth/*` e `/me`, ver
+[navigation.md](navigation.md)):
 
 ```text
 LoginScreen.onSubmit
-  → setSecureItem(SECURE_KEYS.authToken, token)   (persiste)
-  → useAuthStore.getState().signIn(token)          (memória, síncrono)
+  → POST /auth/login
+  → setSecureItem(SECURE_KEYS.refreshToken, refreshToken)  (persiste)
+  → useAuthStore.getState().signIn(accessToken)             (memória, síncrono)
   → router.replace('/(app)')
 
-App start
-  → useBootstrapAuth lê getSecureItem(SECURE_KEYS.authToken)
-  → useAuthStore.getState().hydrate(token)
+App start (src/hooks/useBootstrapAuth.ts)
+  → getSecureItem(SECURE_KEYS.refreshToken)
+  → sem token → useAuthStore.getState().signOut()  (status: unauthenticated)
+  → com token → refreshAccessToken() (POST /auth/refresh; valida e renova
+    em uma única chamada — não há um endpoint separado de "só validar")
+    → sucesso → signIn(novoAccessToken) + persiste o refreshToken rotacionado
+    → falha explícita da API (401) → limpa o SecureStore + signOut()
+    → falha de rede → apenas signOut() para esta sessão do app; o
+      refreshToken persistido não é apagado, para uma próxima tentativa
+
+Logout (src/features/auth/hooks/useLogout.ts)
+  → POST /auth/logout (best-effort — falha de rede não bloqueia o logout local)
+  → deleteSecureItem(SECURE_KEYS.refreshToken)
+  → useAuthStore.getState().signOut()
+  → queryClient.clear() (nenhum dado do usuário anterior fica em cache)
 ```
 
 ## Autorização continua no backend

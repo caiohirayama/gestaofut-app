@@ -2,39 +2,35 @@ import { useAuthStore } from './auth-store';
 
 describe('auth-store', () => {
   beforeEach(() => {
-    useAuthStore.setState({ status: 'idle', token: null });
+    useAuthStore.setState({ status: 'loading', accessToken: null });
   });
 
-  it('starts idle with no token', () => {
+  it('starts loading with no access token', () => {
     const state = useAuthStore.getState();
-    expect(state.status).toBe('idle');
-    expect(state.token).toBeNull();
+    expect(state.status).toBe('loading');
+    expect(state.accessToken).toBeNull();
   });
 
-  it('hydrate marks unauthenticated when there is no stored token', () => {
-    useAuthStore.getState().hydrate(null);
-    expect(useAuthStore.getState().status).toBe('unauthenticated');
-  });
-
-  it('hydrate marks authenticated when a token is found', () => {
-    useAuthStore.getState().hydrate('persisted-token');
+  it('signIn stores the access token and flips status to authenticated', () => {
+    useAuthStore.getState().signIn('new-access-token');
     const state = useAuthStore.getState();
     expect(state.status).toBe('authenticated');
-    expect(state.token).toBe('persisted-token');
+    expect(state.accessToken).toBe('new-access-token');
   });
 
-  it('signIn stores the token and flips status to authenticated', () => {
-    useAuthStore.getState().signIn('new-token');
+  it('signIn can be called again to rotate the access token without changing status', () => {
+    useAuthStore.getState().signIn('first-token');
+    useAuthStore.getState().signIn('rotated-token');
     const state = useAuthStore.getState();
     expect(state.status).toBe('authenticated');
-    expect(state.token).toBe('new-token');
+    expect(state.accessToken).toBe('rotated-token');
   });
 
-  it('signOut clears the token and flips status to unauthenticated', () => {
+  it('signOut clears the access token and flips status to unauthenticated', () => {
     useAuthStore.getState().signIn('token');
     useAuthStore.getState().signOut();
     const state = useAuthStore.getState();
     expect(state.status).toBe('unauthenticated');
-    expect(state.token).toBeNull();
+    expect(state.accessToken).toBeNull();
   });
 });

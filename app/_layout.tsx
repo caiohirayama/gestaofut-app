@@ -7,19 +7,21 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useBootstrapAuth } from '@/hooks/useBootstrapAuth';
 import { queryClient } from '@/services/api/query-client';
+import { useAuthStore } from '@/store/auth-store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const isReady = useBootstrapAuth();
+  useBootstrapAuth();
+  const status = useAuthStore((state) => state.status);
 
   useEffect(() => {
-    if (isReady) {
+    if (status !== 'loading') {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [isReady]);
+  }, [status]);
 
-  if (!isReady) {
+  if (status === 'loading') {
     return null;
   }
 

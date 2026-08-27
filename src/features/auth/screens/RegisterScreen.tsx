@@ -1,58 +1,64 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { Button, Input, Screen, Text } from '@/components/ui';
 import { spacing } from '@/theme';
 import { PasswordInput } from '../components/PasswordInput';
-import { useLogin } from '../hooks/useLogin';
+import { useRegister } from '../hooks/useRegister';
 import { getAuthErrorMessage } from '../utils/auth-error-message';
-import { loginSchema, type LoginFormValues } from '../schemas/login-schema';
+import { registerSchema, type RegisterFormValues } from '../schemas/register-schema';
 
-export function LoginScreen() {
-  const { registered } = useLocalSearchParams<{ registered?: string }>();
-  const loginMutation = useLogin();
+export function RegisterScreen() {
+  const registerMutation = useRegister();
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting, isValid },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     mode: 'onBlur',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
 
-  async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: RegisterFormValues) {
     try {
-      await loginMutation.mutateAsync(values);
-      router.replace('/(app)');
+      await registerMutation.mutateAsync(values);
+      router.replace({ pathname: '/(auth)/login', params: { registered: '1' } });
     } catch {
-      // surfaced via loginMutation.error below
+      // surfaced via registerMutation.error below
     }
   }
 
   return (
     <Screen scroll>
       <View style={{ marginTop: spacing.xxl, marginBottom: spacing.xl }}>
-        <Text variant="title">Entrar</Text>
+        <Text variant="title">Criar conta</Text>
         <Text variant="body" color="textSecondary" style={{ marginTop: spacing.xs }}>
-          Acesse sua conta para gerenciar seu grupo.
+          Crie sua conta para começar a gerenciar seu grupo.
         </Text>
       </View>
 
-      {registered ? (
-        <Text
-          variant="caption"
-          color="success"
-          style={{ marginBottom: spacing.lg }}
-          accessibilityRole="alert"
-        >
-          Conta criada com sucesso. Faça login para continuar.
-        </Text>
-      ) : null}
-
       <View style={{ gap: spacing.lg }}>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { value, onChange, onBlur } }) => (
+            <Input
+              label="Nome"
+              placeholder="Seu nome completo"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              error={errors.name?.message}
+              autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+            />
+          )}
+        />
+
         <Controller
           control={control}
           name="email"
@@ -84,21 +90,40 @@ export function LoginScreen() {
               onBlur={onBlur}
               error={errors.password?.message}
               autoCapitalize="none"
-              autoComplete="password"
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
           )}
         />
 
-        {loginMutation.isError ? (
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { value, onChange, onBlur } }) => (
+            <PasswordInput
+              label="Confirmar senha"
+              placeholder="••••••••"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              error={errors.confirmPassword?.message}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              textContentType="newPassword"
+            />
+          )}
+        />
+
+        {registerMutation.isError ? (
           <Text variant="caption" color="danger" accessibilityRole="alert">
-            {getAuthErrorMessage(loginMutation.error)}
+            {getAuthErrorMessage(registerMutation.error)}
           </Text>
         ) : null}
 
         <Button
-          label="Entrar"
+          label="Criar conta"
           onPress={handleSubmit(onSubmit)}
-          loading={isSubmitting || loginMutation.isPending}
+          loading={isSubmitting || registerMutation.isPending}
           disabled={!isValid}
         />
 
@@ -106,10 +131,10 @@ export function LoginScreen() {
           variant="label"
           color="primary"
           style={{ textAlign: 'center', marginTop: spacing.sm }}
-          onPress={() => router.push('/(auth)/register')}
+          onPress={() => router.back()}
           accessibilityRole="button"
         >
-          Ainda não tem conta? Criar conta
+          Já tem conta? Entrar
         </Text>
       </View>
     </Screen>

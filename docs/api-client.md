@@ -19,11 +19,26 @@ app.
 
 Cliente único para os endpoints versionados (`/api/v1/...`):
 
-- **Authorization**: injeta `Bearer <token>` lendo `useAuthStore.getState().token`
-  (a menos que `auth: false` seja passado).
+- **Authorization**: injeta `Bearer <accessToken>` lendo
+  `useAuthStore.getState().accessToken` (a menos que `auth: false` seja
+  passado — usado por `/auth/register`, `/auth/login`, `/auth/refresh`, que
+  não levam bearer).
 - **Timeout**: `AbortController` interno, default 10s (`timeoutMs`).
 - **Cancelamento**: aceita um `signal` externo (ex.: o do `queryFn` do
   TanStack Query) e o combina com o timeout interno.
+- **Refresh automático em 401**: se uma requisição feita com `auth: true`
+  recebe `401`, o client chama `refreshAccessToken()`
+  (`src/services/api/token-refresh.ts`) e repete a requisição original
+  **uma única vez** com o novo access token — nunca duas vezes (a segunda
+  tentativa, se também vier `401`, segue para o erro normalmente, sem
+  loop). Chamadas concorrentes que caem em 401 ao mesmo tempo compartilham
+  a mesma promise de refresh (`refreshAccessToken` deduplica), então uma
+  rajada de requisições nunca dispara mais de um `POST /auth/refresh`. Se o
+  próprio refresh falhar, `token-refresh.ts` já limpa a sessão local
+  (`signOut()` + apaga o refresh token do SecureStore) antes do erro
+  propagar — nenhuma tela precisa tratar "sessão expirada" manualmente.
+  Um `401` em uma requisição com `auth: false` (ex.: senha errada no
+  login) nunca aciona esse fluxo — é apenas um erro de negócio normal.
 - **Erros padronizados**: qualquer falha vira `ApiError` (`status`, `code`,
   `details`) — nunca um erro cru de `fetch` ou um `Response` não tratado. O
   `code` é mapeado a partir do corpo `{ error: { code, message } }` que o
@@ -37,8 +52,10 @@ const group = await apiFetch<Group>(`/groups/${id}`, { signal });
 
 ## Endpoints (`src/services/api/endpoints/`)
 
-Cada arquivo agrupa as chamadas de um recurso (hoje só `system.ts`, com
-`getHealth()`). `getHealth()` é a exceção que confirma a regra: chama
+Cada arquivo agrupa as chamadas de um recurso: `system.ts` (`getHealth()`)
+e `auth.ts` (`register`, `login`, `refresh`, `logout`, `getMe` — tipos
+espelham exatamente o contrato OpenAPI do `gestaofut-api`, sem campo
+inventado). `getHealth()` é a exceção que confirma a regra: chama
 `/health` diretamente (sem `apiFetch`/`API_BASE_URL`/auth), porque é um
 endpoint operacional do `gestaofut-api`, não de negócio.
 

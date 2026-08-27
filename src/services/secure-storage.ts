@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
  * `[A-Za-z0-9._-]+` per SecureStore's constraints.
  */
 export const SECURE_KEYS = {
-  authToken: 'auth_token',
+  refreshToken: 'refresh_token',
 } as const;
 
 export async function getSecureItem(key: string): Promise<string | null> {

@@ -9,6 +9,7 @@ app/
   (auth)/          Fluxo não autenticado
     _layout.tsx    <Stack headerShown={false}>
     login.tsx
+    register.tsx
   (app)/           Fluxo autenticado
     _layout.tsx    <Tabs>
     index.tsx      Início
@@ -21,15 +22,17 @@ app/
 ## Como a sessão decide o grupo
 
 `app/index.tsx` lê `useAuthStore` e renderiza `<Redirect>` para
-`/(app)` ou `/(auth)/login`. O estado de sessão (`idle` → `authenticated` |
-`unauthenticated`) vem de `src/hooks/useBootstrapAuth.ts`, que lê o token do
-Expo SecureStore uma única vez na inicialização. Enquanto isso não resolve
-(`idle`), `app/_layout.tsx` mantém a splash screen visível
-(`SplashScreen.preventAutoHideAsync`) para não piscar a tela errada.
+`/(app)` ou `/(auth)/login`. O estado de sessão (`loading` → `authenticated`
+| `unauthenticated`) vem de `src/hooks/useBootstrapAuth.ts`, que lê o
+refresh token do Expo SecureStore uma única vez na inicialização e, se
+houver um, chama `POST /auth/refresh` para validar e renovar a sessão (ver
+[state-management.md](state-management.md) para o fluxo completo). Enquanto
+isso não resolve (`loading`), `app/_layout.tsx` mantém a splash screen
+visível (`SplashScreen.preventAutoHideAsync`) para não piscar a tela errada.
 
-Nenhuma verificação de expiração/validade de token acontece no cliente — o
-backend é sempre a autoridade (ver [state-management.md](state-management.md)
-e o repositório `gestaofut-api`).
+A validade do token nunca é decidida no cliente — quem decide é sempre a
+resposta do `gestaofut-api` a `/auth/refresh` (ver `docs/security.md` desse
+repositório).
 
 ## Tabs
 

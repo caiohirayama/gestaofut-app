@@ -5,4 +5,5 @@ module.exports = {
   },
   setupFiles: ['./jest.setup.js'],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
+  clearMocks: true,
 };

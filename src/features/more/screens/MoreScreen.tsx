@@ -1,19 +1,16 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { View } from 'react-native';
 import { Button, Card, Screen, Text } from '@/components/ui';
-import { deleteSecureItem, SECURE_KEYS } from '@/services/secure-storage';
-import { useAuthStore } from '@/store/auth-store';
+import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
+import { useLogout } from '@/features/auth/hooks/useLogout';
 import { spacing } from '@/theme';
 
 export function MoreScreen() {
-  const signOut = useAuthStore((state) => state.signOut);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { signOut, isPending: isSigningOut } = useLogout();
+  const { data: user, isPending: isLoadingUser } = useCurrentUser();
 
   async function handleSignOut() {
-    setIsSigningOut(true);
-    await deleteSecureItem(SECURE_KEYS.authToken);
-    signOut();
+    await signOut();
     router.replace('/(auth)/login');
   }
 
@@ -22,6 +19,15 @@ export function MoreScreen() {
       <View style={{ marginTop: spacing.xxl, marginBottom: spacing.xl }}>
         <Text variant="title">Mais</Text>
       </View>
+
+      {isLoadingUser ? null : user ? (
+        <Card style={{ marginBottom: spacing.lg }}>
+          <Text variant="bodyStrong">{user.name}</Text>
+          <Text variant="caption" color="textTertiary" style={{ marginTop: spacing.xs }}>
+            {user.email}
+          </Text>
+        </Card>
+      ) : null}
 
       <Card>
         <Text variant="bodyStrong">GestãoFut</Text>

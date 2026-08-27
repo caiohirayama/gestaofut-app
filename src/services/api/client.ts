@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/store/auth-store';
 import { API_BASE_URL } from './env';
 import { ApiError, type ApiErrorCode } from './errors';
+import { refreshAccessToken } from './token-refresh';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
@@ -32,6 +33,7 @@ function isKnownErrorCode(code: string | undefined): code is ApiErrorCode {
       'FORBIDDEN',
       'NOT_FOUND',
       'CONFLICT',
+      'TOO_MANY_REQUESTS',
       'INTERNAL_SERVER_ERROR',
     ].includes(code)
   );
@@ -40,10 +42,19 @@ function isKnownErrorCode(code: string | undefined): code is ApiErrorCode {
 /**
  * Centralized HTTP client for versioned business endpoints
  * (`${API_BASE_URL}${path}`). Handles Authorization injection, timeout,
- * cancellation and standardized error mapping. Prefer this over calling
- * `fetch` directly anywhere in the app.
+ * cancellation, standardized error mapping, and a single transparent
+ * refresh-and-retry on 401 (see docs/api-client.md). Prefer this over
+ * calling `fetch` directly anywhere in the app.
  */
-export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+export function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+  return performRequest<T>(path, options, false);
+}
+
+async function performRequest<T>(
+  path: string,
+  options: ApiFetchOptions,
+  isRetry: boolean,
+): Promise<T> {
   const {
     method = 'GET',
     body,
@@ -66,7 +77,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     requestHeaders['Content-Type'] = 'application/json';
   }
   if (auth) {
-    const token = useAuthStore.getState().token;
+    const token = useAuthStore.getState().accessToken;
     if (token) {
       requestHeaders.Authorization = `Bearer ${token}`;
     }
@@ -79,6 +90,17 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
+
+    // A 401 on a request that carried (or should carry) a bearer token means
+    // the access token is missing/expired — try exactly one silent refresh
+    // and replay the request once. `isRetry` guarantees this only ever
+    // happens once per original call, so a still-401 response after
+    // refreshing just falls through to the normal error path below instead
+    // of looping.
+    if (response.status === 401 && auth && !isRetry) {
+      await refreshAccessToken();
+      return performRequest<T>(path, options, true);
+    }
 
     if (!response.ok) {
       let payload: ErrorResponseBody = {};
