@@ -7,6 +7,8 @@ import * as SecureStore from 'expo-secure-store';
  */
 export const SECURE_KEYS = {
   refreshToken: 'refresh_token',
+  /** Last active group id — a convenience pointer, re-validated against the API on load, never trusted for authorization. */
+  activeGroupId: 'active_group_id',
 } as const;
 
 export async function getSecureItem(key: string): Promise<string | null> {

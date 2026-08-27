@@ -5,13 +5,19 @@
 ```text
 app/                      Expo Router — apenas rotas finas
   _layout.tsx              Root: providers, splash/bootstrap, <Stack>
-  index.tsx                 Redirect (auth) vs (app) conforme sessão
+  index.tsx                 Redirect (auth) vs (group-setup) conforme sessão
   (auth)/
     _layout.tsx
-    login.tsx                → monta src/features/auth/screens/LoginScreen
+    login.tsx, register.tsx  → montam telas de src/features/auth/screens
+  (group-setup)/            Resolve o grupo ativo antes de liberar (app) —
+    _layout.tsx              ver docs/multi-tenancy.md
+    index.tsx                 → GroupGateScreen
+    create.tsx                 → CreateGroupScreen
   (app)/
-    _layout.tsx              <Tabs> (Início/Jogos/Jogadores/Financeiro/Mais)
+    _layout.tsx              <Tabs> dinâmicas conforme permissions
     index.tsx, games.tsx, ... → montam telas de src/features/*
+  group-settings.tsx, switch-group.tsx → fora dos grupos de rota acima,
+    empilhadas por cima das tabs (ver docs/navigation.md)
 
 src/
   components/
@@ -60,12 +66,30 @@ usa TanStack Query para chamar `GET /health` do `gestaofut-api` e
 system. Isso valida cliente HTTP, TanStack Query e design system juntos sem
 inventar dados de negócio.
 
+## Feature `groups` (organizations, grupos, permissions)
+
+Primeira feature de produto real, além de `auth`. Detalhada em
+[multi-tenancy.md](multi-tenancy.md); do ponto de vista arquitetural segue a
+mesma estrutura `screens/hooks/schemas` das demais features, com dois
+acréscimos:
+
+- `components/` — composições pequenas específicas da feature (`ChipSelect`,
+  `GroupPicker`) que não fazem sentido no design system genérico.
+- `utils/` — `permissions.ts` (espelho não-autoritativo do RBAC do
+  `gestaofut-api`), `tab-visibility.ts`, `slugify.ts`, `sport-labels.ts`.
+
+`src/store/group-store.ts` (o "GroupContext") e a leitura de
+`SECURE_KEYS.activeGroupId` seguem os mesmos padrões de `auth-store`/
+`secure-storage.ts` já estabelecidos — ver
+[state-management.md](state-management.md).
+
 ## Por que este é um bom ponto de partida
 
 - Cada peça (design system, cliente HTTP, store, navegação) é testável
   isoladamente.
-- Adicionar uma feature real (jogos, jogadores, financeiro) significa criar
-  uma pasta em `src/features/<nome>/` e registrar suas rotas — não exige
-  mudar nada da fundação.
-- Nenhuma decisão aqui pressupõe como o backend de autenticação/negócio vai
-  se parecer, exceto o contrato mínimo já validado (`/health`, `/api/v1`).
+- Adicionar uma feature real (jogos, financeiro) significa criar uma pasta
+  em `src/features/<nome>/` e registrar suas rotas — não exige mudar nada da
+  fundação, como `groups` já demonstrou.
+- Nenhuma decisão aqui pressupõe como o backend de negócio vai se parecer
+  além do contrato já validado (`/health`, `/api/v1`, auth, organizations/
+  groups).

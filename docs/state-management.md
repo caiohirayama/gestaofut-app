@@ -19,11 +19,22 @@ do `gestaofut-api` e `HomeScreen` reage a `isPending`/`isError`/`data`.
 
 ## 2. Zustand — estado local global
 
-`src/store/auth-store.ts` é o único store hoje: guarda **apenas**
-`{ status, token }` — a sessão do próprio app, não um cache de dados do
-servidor. Regra dura: **dado que vem da API vive no TanStack Query, nunca no
-Zustand**. Um store novo só se justifica para estado que é genuinamente do
-cliente (preferências de UI, flags de onboarding, sessão) — não para
+Dois stores hoje, cada um guardando **apenas** estado genuinamente do
+cliente — nunca um cache de dados do servidor (regra dura: **dado que vem
+da API vive no TanStack Query, nunca no Zustand**):
+
+- `src/store/auth-store.ts` — `{ status, accessToken }`, a sessão do app.
+- `src/store/group-store.ts` — `{ activeGroupId, activeOrganizationId }`, o
+  grupo ao qual o app está "escopado" no momento. É o equivalente a um
+  "GroupContext": implementado como Zustand (não React Context) para ficar
+  consistente com `auth-store` — ver [multi-tenancy.md](multi-tenancy.md).
+  **Isso nunca é autorização** — é só um ponteiro de conveniência para saber
+  qual `groupId`/`organizationId` usar nas chamadas de API; quem decide o
+  que o usuário pode fazer com esse grupo é sempre a API (403 se a
+  permission real não bater).
+
+Um store novo só se justifica para estado que é genuinamente do cliente
+(preferências de UI, flags de onboarding, sessão, seleção ativa) — não para
 espelhar uma resposta de rede.
 
 ## 3. Expo SecureStore — persistência sensível
@@ -33,7 +44,11 @@ lugar por onde o **refresh token** passa para ser persistido entre sessões
 do app — nunca `AsyncStorage`, nunca `zustand/persist`, nunca um arquivo
 comum. O **access token** vive só em memória, em `useAuthStore.accessToken`
 (nunca é escrito em disco); é ele que o cliente HTTP injeta como
-`Authorization: Bearer` (ver [api-client.md](api-client.md)).
+`Authorization: Bearer` (ver [api-client.md](api-client.md)). O último
+`activeGroupId` (ver `group-store.ts` acima) também passa por aqui — não
+porque o id de um grupo seja sensível, mas para reaproveitar o único ponto
+de persistência que o projeto já tem, em vez de introduzir `AsyncStorage`
+só para essa conveniência.
 
 Fluxo real (`gestaofut-api` já expõe `/auth/*` e `/me`, ver
 [navigation.md](navigation.md)):
@@ -57,16 +72,31 @@ App start (src/hooks/useBootstrapAuth.ts)
 
 Logout (src/features/auth/hooks/useLogout.ts)
   → POST /auth/logout (best-effort — falha de rede não bloqueia o logout local)
-  → deleteSecureItem(SECURE_KEYS.refreshToken)
-  → useAuthStore.getState().signOut()
-  → queryClient.clear() (nenhum dado do usuário anterior fica em cache)
+  → deleteSecureItem(SECURE_KEYS.refreshToken) + deleteSecureItem(SECURE_KEYS.activeGroupId)
+  → useAuthStore.getState().signOut() + useGroupStore.getState().clearActiveGroup()
+  → queryClient.clear() (nenhum dado do usuário/grupo anterior fica em cache)
+
+Seleção de grupo (src/features/groups/ — ver multi-tenancy.md)
+  → após autenticado, GroupGateScreen resolve o grupo ativo:
+    0 grupos e sem permissão em nenhuma organização → tela vazia
+    0 grupos mas pode criar → tela de criação
+    1 grupo → seleciona automaticamente, sem perguntar
+    >1 grupos, sem ponteiro persistido válido → tela de seleção
+  → em qualquer caso: useGroupStore.getState().setActiveGroup(groupId, organizationId)
+    + setSecureItem(SECURE_KEYS.activeGroupId, groupId)
 ```
 
 ## Autorização continua no backend
 
-Nada aqui decide *permissão* — `status: 'authenticated'` só controla qual
-grupo de rotas é exibido no cliente. Qualquer verificação de "o usuário pode
-fazer X" deve ser respondida pela API (`gestaofut-api`), nunca inferida de um
-campo local (ex.: um "role" guardado no Zustand). Ver
-`docs/security.md`/`docs/architecture.md` do `gestaofut-api` para o
-racional de multi-tenancy e IDOR.
+Nada aqui decide *permissão*. `status: 'authenticated'` só controla qual
+grupo de rotas é exibido no cliente, e `activeGroupId`/`activeOrganizationId`
+só dizem qual grupo está "selecionado" — nunca o que o usuário pode fazer
+com ele. Para gating de UI (esconder uma tab, desabilitar um botão), o app
+usa um **espelho local, não-autoritativo**, do mapa role → permission do
+`gestaofut-api` (`src/features/groups/utils/permissions.ts`, com a role real
+obtida via `GET /organizations/:id/members`) — mas qualquer ação que muda
+dado sempre passa pela API de verdade, que responde `403` se a permission
+real não bater, mesmo que esse espelho local diga o contrário (cliente
+desatualizado, adulterado, etc.). Ver `docs/security.md` e
+`docs/multi-tenancy.md` do `gestaofut-api` para o racional de multi-tenancy,
+RBAC e IDOR.

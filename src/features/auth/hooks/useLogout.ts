@@ -3,6 +3,7 @@ import { logout as logoutRequest } from '@/services/api/endpoints/auth';
 import { deleteSecureItem, getSecureItem, SECURE_KEYS } from '@/services/secure-storage';
 import { queryClient } from '@/services/api/query-client';
 import { useAuthStore } from '@/store/auth-store';
+import { useGroupStore } from '@/store/group-store';
 
 /**
  * Ends the local session unconditionally, even if the API call to revoke
@@ -23,7 +24,9 @@ export function useLogout() {
       }
     } finally {
       await deleteSecureItem(SECURE_KEYS.refreshToken);
+      await deleteSecureItem(SECURE_KEYS.activeGroupId);
       useAuthStore.getState().signOut();
+      useGroupStore.getState().clearActiveGroup();
       queryClient.clear();
       setIsPending(false);
     }

@@ -1,5 +1,5 @@
-import { ComingSoonScreen } from '@/components/common/ComingSoonScreen';
+import { MembersScreen } from '@/features/groups/screens/MembersScreen';
 
 export default function Players() {
-  return <ComingSoonScreen title="Jogadores" message="A gestão de jogadores chega em breve." />;
+  return <MembersScreen />;
 }

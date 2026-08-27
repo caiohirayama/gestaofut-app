@@ -10,4 +10,14 @@ export const queryKeys = {
   auth: {
     me: ['auth', 'me'] as const,
   },
+  organizations: {
+    list: ['organizations'] as const,
+    members: (organizationId: string) => ['organizations', organizationId, 'members'] as const,
+    groups: (organizationId: string) => ['organizations', organizationId, 'groups'] as const,
+  },
+  groups: {
+    detail: (groupId: string) => ['groups', groupId] as const,
+    settings: (groupId: string) => ['groups', groupId, 'settings'] as const,
+    members: (groupId: string) => ['groups', groupId, 'members'] as const,
+  },
 } as const;

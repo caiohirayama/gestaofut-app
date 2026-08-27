@@ -1,10 +1,13 @@
 # GestãoFut App
 
 Aplicativo móvel (iOS/Android) do GestãoFut — plataforma de gestão de grupos
-esportivos recorrentes. Este repositório contém, por enquanto, apenas as
-**foundations**: nenhuma feature de negócio (jogos, jogadores, financeiro,
-eventos, notificações) e nenhuma autenticação real foram implementadas ainda.
-Veja [docs/architecture.md](docs/architecture.md) para o que vem a seguir.
+esportivos recorrentes. Já implementados: autenticação real contra o
+`gestaofut-api` (registro, login, refresh automático, logout — ver
+[docs/api-client.md](docs/api-client.md)) e o núcleo de organizações/grupos
+(seleção e criação de grupo, configurações básicas, membros, tabs
+dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md)).
+Jogos, financeiro, eventos e notificações ainda não existem. Veja
+[docs/architecture.md](docs/architecture.md) para o que vem a seguir.
 
 ## Stack
 
@@ -23,6 +26,8 @@ Apenas iOS e Android — sem web/PWA/Next.js.
 - Node.js 24+
 - pnpm 9+
 - Xcode (iOS, macOS apenas) e/ou Android Studio (Android)
+- `gestaofut-api` rodando localmente (ver o README desse repositório) —
+  `EXPO_PUBLIC_API_URL` deve apontar para ele.
 
 ## Quick start
 
@@ -35,9 +40,11 @@ pnpm android        # abre no emulador/dispositivo Android
 pnpm ios            # abre no simulador iOS (macOS apenas)
 ```
 
-O app inicia na tela de login (stub, sem backend real ainda) e, após
-"entrar", navega para a shell de tabs (`Início / Jogos / Jogadores /
-Financeiro / Mais`).
+O app inicia na tela de login/cadastro. Após autenticar, resolve o grupo
+ativo automaticamente (seleciona se só houver um, oferece criar o primeiro
+se for um usuário novo, ou pede para escolher entre vários) e então mostra
+a shell de tabs (`Início / Jogos / Jogadores / Financeiro / Mais`, cada uma
+aparecendo ou não conforme as permissions do usuário nesse grupo).
 
 ## Scripts
 
@@ -54,8 +61,9 @@ Financeiro / Mais`).
 ## Documentação
 
 - [docs/architecture.md](docs/architecture.md) — estrutura de pastas e regras de dependência
-- [docs/navigation.md](docs/navigation.md) — Expo Router, grupos `(auth)`/`(app)`, tabs
+- [docs/navigation.md](docs/navigation.md) — Expo Router, grupos de rota, tabs dinâmicas
+- [docs/multi-tenancy.md](docs/multi-tenancy.md) — organizations, grupos, permissions, GroupContext
 - [docs/design-system.md](docs/design-system.md) — componentes base e tokens visuais
 - [docs/state-management.md](docs/state-management.md) — TanStack Query vs. Zustand vs. SecureStore
-- [docs/api-client.md](docs/api-client.md) — cliente HTTP, erros, query keys
+- [docs/api-client.md](docs/api-client.md) — cliente HTTP, erros, query keys, refresh automático
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature
