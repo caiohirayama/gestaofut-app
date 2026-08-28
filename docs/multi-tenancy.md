@@ -89,9 +89,26 @@ sai correta da mesma regra.
   `group.read` (qualquer membro ativo) vê a tela; só quem tem `group.update`
   vê os campos editáveis e o botão salvar — sem esse permission, os mesmos
   campos aparecem como somente leitura.
-- `MembersScreen` (tab Jogadores) — lista `GET /groups/:id/members`; exige
-  `member.manage` para ver o formulário de adicionar/remover (a tab em si já
-  não aparece sem essa permission).
+- `MembersScreen` (tab Jogadores, gated por `member.manage` na própria tab)
+  — lista `GET /groups/:id/members` **sem** filtro de servidor: com 20-100
+  membros por grupo (escala do produto), filtro/busca são só client-side
+  (`src/features/groups/utils/filter-members.ts`, testado isoladamente).
+  Filtros: Todos/Mensalistas/Goleiros/Avulsos (todos = "ativo" + o tipo) e
+  Inativos (`INACTIVE` **ou** `SUSPENDED` — a API só filtra um `status`
+  exato por vez, então "inativos" nunca poderia ser feito num único
+  request do jeito que ela é hoje). É uma única `FlatList` (busca e chips
+  de filtro vivem no `ListHeaderComponent`, nunca uma `ScrollView` em volta
+  da lista) com linhas memoizadas (`React.memo`) — importante com listas
+  desse tamanho renderizando a cada tecla digitada na busca.
+- `PlayerDetailScreen` (`app/player/[memberId].tsx`, primeira rota dinâmica
+  do app) — informações básicas, membership (`joinedAt`/`leftAt`) e
+  histórico (`GET .../history`). Com `member.manage`: alterar categoria,
+  promover avulso (só aparece se `membershipType === 'GUEST'`) e desativar
+  (desabilitado se já `INACTIVE`) — todas as três atrás de um
+  `Alert.alert` de confirmação antes de disparar a mutation.
+- `AddPlayerScreen` (`app/add-player.tsx`, alcançada pelo ícone no header
+  da lista, só visível com `member.manage`) — mesmo formulário de sempre
+  (`userId` + categoria), sem busca por e-mail (ver limitações abaixo).
 - `SwitchGroupScreen` (`app/switch-group.tsx`, "Trocar grupo" em "Mais",
   só exibido quando há mais de um grupo) — sempre lista todos os grupos,
   ao contrário do `GroupGateScreen` (que evita perguntar quando há só um).
@@ -99,10 +116,20 @@ sai correta da mesma regra.
 ## Limitações conhecidas do contrato atual
 
 - **Não existe busca de usuário por e-mail.** `POST /groups/:id/members`
-  exige um `userId` (UUID). `MembersScreen` expõe um campo de texto para
+  exige um `userId` (UUID). `AddPlayerScreen` expõe um campo de texto para
   colar esse ID diretamente — funcional, mas claramente uma solução
   provisória até existir um endpoint de busca/convite por e-mail no
   `gestaofut-api`.
-- **`GroupMember`/`OrganizationMember` não trazem nome/e-mail do usuário** —
-  só `userId`. `MembersScreen` mostra o ID cru por falta de um endpoint de
-  perfil público/em lote; nomes reais exigiriam um novo endpoint na API.
+- **`GroupMember`/`OrganizationMember` não trazem nome/e-mail/avatar do
+  usuário** — só `userId`. `src/features/groups/utils/member-display.ts`
+  deriva um rótulo estável ("Jogador 9c64a3f8", ou "Você" na própria linha)
+  a partir do id em vez de inventar um nome; a busca em `MembersScreen`
+  também é por `userId`, pelo mesmo motivo. `Avatar` sempre cai no
+  fallback de iniciais (nunca há `uri` de foto). Nomes/fotos reais
+  exigiriam um endpoint de perfil (público ou em lote) na API.
+- **Não há situação financeira nenhuma para mostrar.** O `gestaofut-api`
+  ainda não tem módulo financeiro (nem um campo como "inadimplente" em
+  `GroupMember`) — está listado como "Não implementado" na documentação
+  desse repositório. `MembersScreen` não renderiza nenhum indicador
+  financeiro por linha (nem um placeholder vazio) até que esse dado exista
+  de verdade na API.

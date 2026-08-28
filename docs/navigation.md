@@ -24,6 +24,8 @@ app/
   group-settings.tsx  GroupSettingsScreen — fora de (app), empilhada por
                       cima das tabs (ver "Telas fora das tabs" abaixo)
   switch-group.tsx    SwitchGroupScreen — idem
+  add-player.tsx      AddPlayerScreen — idem
+  player/[memberId].tsx  PlayerDetailScreen — idem, primeira rota dinâmica do app
 ```
 
 ## Como a sessão decide o grupo
@@ -69,17 +71,24 @@ para a tabela completa de qual permission gate cada tab.
 Início e Mais são sempre visíveis. Jogos e Financeiro ainda renderizam
 `src/components/common/ComingSoonScreen.tsx` (reuso do `EmptyState` do
 design system) — a shell de navegação já existe, sem antecipar essas
-features. Jogadores já tem uma tela real (`MembersScreen`).
+features. Jogadores já tem uma tela real (`MembersScreen` — lista com
+filtros/busca/permissions, ver [multi-tenancy.md](multi-tenancy.md)).
 
 ## Telas fora das tabs
 
-`app/group-settings.tsx` e `app/switch-group.tsx` ficam soltas na raiz de
-`app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`:
-uma tela alcançada por `router.push` a partir de dentro de uma tab (ex.:
-"Configurações do grupo" em Mais) precisa estar registrada no `<Stack>`
-raiz, não na lista fixa de `<Tabs.Screen>` — é o padrão recomendado do Expo
-Router para uma tela "de detalhe" que empilha por cima da barra de tabs em
-vez de substituí-la.
+`app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx` e
+`app/player/[memberId].tsx` ficam soltas na raiz de `app/` (irmãs de
+`(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`: uma tela
+alcançada por `router.push` a partir de dentro de uma tab (ex.: "Adicionar
+jogador" ou tocar numa linha da lista de jogadores) precisa estar
+registrada no `<Stack>` raiz, não na lista fixa de `<Tabs.Screen>` — é o
+padrão recomendado do Expo Router para uma tela "de detalhe" que empilha
+por cima da barra de tabs em vez de substituí-la.
+
+`player/[memberId].tsx` é a primeira rota dinâmica do app — navegada via
+`router.push({ pathname: '/player/[memberId]', params: { memberId } })`
+(forma tipada com objeto, não string interpolada) a partir de uma linha da
+`MembersScreen`.
 
 ## Adicionando uma rota nova
 

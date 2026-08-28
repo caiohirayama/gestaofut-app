@@ -19,5 +19,7 @@ export const queryKeys = {
     detail: (groupId: string) => ['groups', groupId] as const,
     settings: (groupId: string) => ['groups', groupId, 'settings'] as const,
     members: (groupId: string) => ['groups', groupId, 'members'] as const,
+    memberHistory: (groupId: string, memberId: string) =>
+      ['groups', groupId, 'members', memberId, 'history'] as const,
   },
 } as const;

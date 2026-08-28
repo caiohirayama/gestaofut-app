@@ -1,156 +1,141 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import { FlatList, View } from 'react-native';
-import { Badge, Button, Card, ErrorState, Input, LoadingState, Screen, Text } from '@/components/ui';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, View, type ListRenderItemInfo } from 'react-native';
+import { Avatar, Badge, Card, ErrorState, Input, LoadingState, Screen, Text } from '@/components/ui';
+import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import type { GroupMember } from '@/services/api/endpoints/groups';
-import { getApiErrorMessage } from '@/services/api/error-message';
 import { useGroupStore } from '@/store/group-store';
-import { spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 import { ChipSelect } from '../components/ChipSelect';
 import { useActiveGroupPermissions } from '../hooks/useActiveGroupPermissions';
-import { useAddGroupMember, useGroupMembers, useUpdateGroupMember } from '../hooks/useGroupMembers';
-import { addGroupMemberSchema, type AddGroupMemberFormValues } from '../schemas/add-group-member-schema';
+import { useGroupMembers } from '../hooks/useGroupMembers';
+import { displayNameForMember } from '../utils/member-display';
+import { MEMBERSHIP_LABELS, STATUS_BADGE_VARIANT, STATUS_LABELS } from '../utils/member-labels';
+import { filterMembers, MEMBER_FILTERS, MEMBER_FILTER_LABELS, type MemberFilterKey } from '../utils/filter-members';
 
-const MEMBERSHIP_LABELS: Record<GroupMember['membershipType'], string> = {
-  REGULAR: 'Linha',
-  GOALKEEPER: 'Goleiro',
-  GUEST: 'Convidado',
-};
-
-const MEMBERSHIP_OPTIONS = (Object.keys(MEMBERSHIP_LABELS) as GroupMember['membershipType'][]).map((value) => ({
-  value,
-  label: MEMBERSHIP_LABELS[value],
-}));
-
-const STATUS_BADGE_VARIANT: Record<GroupMember['status'], 'success' | 'warning' | 'neutral'> = {
-  ACTIVE: 'success',
-  SUSPENDED: 'warning',
-  INACTIVE: 'neutral',
-};
+const FILTER_OPTIONS = MEMBER_FILTERS.map((value) => ({ value, label: MEMBER_FILTER_LABELS[value] }));
 
 export function MembersScreen() {
   const groupId = useGroupStore((state) => state.activeGroupId);
   const { data: members, isPending, isError, refetch } = useGroupMembers(groupId ?? undefined);
+  const { data: me } = useCurrentUser();
   const { can } = useActiveGroupPermissions();
   const canManage = can('member.manage');
 
-  return (
-    <Screen>
-      <View style={{ marginTop: spacing.xxl, marginBottom: spacing.lg }}>
-        <Text variant="title">Jogadores</Text>
-      </View>
+  const [filter, setFilter] = useState<MemberFilterKey>('ALL');
+  const [search, setSearch] = useState('');
 
-      {canManage && groupId ? <AddMemberForm groupId={groupId} /> : null}
+  const filtered = useMemo(() => filterMembers(members ?? [], filter, search), [members, filter, search]);
 
-      {isPending ? (
-        <LoadingState />
-      ) : isError ? (
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<GroupMember>) => (
+      <MemberRow
+        member={item}
+        currentUserId={me?.id}
+        onPress={() => router.push({ pathname: '/player/[memberId]', params: { memberId: item.id } })}
+      />
+    ),
+    [me?.id],
+  );
+
+  if (isPending) {
+    return (
+      <Screen>
+        <LoadingState label="Carregando jogadores..." />
+      </Screen>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Screen>
         <ErrorState onRetry={refetch} />
-      ) : members && members.length === 0 ? (
-        <Text variant="body" color="textSecondary">
-          Nenhum jogador neste grupo ainda.
-        </Text>
-      ) : (
-        <FlatList
-          data={members}
-          keyExtractor={(member) => member.id}
-          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xl }}
-          renderItem={({ item }) => <MemberRow member={item} groupId={groupId!} canManage={canManage} />}
-        />
-      )}
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen padded={false}>
+      <FlatList
+        data={filtered}
+        keyExtractor={(member) => member.id}
+        renderItem={renderItem}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl }}
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={16}
+        windowSize={7}
+        removeClippedSubviews
+        ListHeaderComponent={
+          <View style={{ gap: spacing.md, marginBottom: spacing.md }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text variant="title">Jogadores</Text>
+              {canManage ? (
+                <Pressable
+                  onPress={() => router.push('/add-player')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Adicionar jogador"
+                  hitSlop={8}
+                >
+                  <Ionicons name="person-add-outline" size={24} color={colors.primary} />
+                </Pressable>
+              ) : null}
+            </View>
+            <Input
+              placeholder="Buscar por ID do usuário"
+              value={search}
+              onChangeText={setSearch}
+              autoCapitalize="none"
+              accessibilityLabel="Buscar jogador"
+            />
+            <ChipSelect options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
+          </View>
+        }
+        ListEmptyComponent={
+          <Text variant="body" color="textSecondary" style={{ textAlign: 'center', marginTop: spacing.xl }}>
+            {search || filter !== 'ALL' ? 'Nenhum jogador encontrado.' : 'Nenhum jogador neste grupo ainda.'}
+          </Text>
+        }
+      />
     </Screen>
   );
 }
 
-function AddMemberForm({ groupId }: { groupId: string }) {
-  const addMemberMutation = useAddGroupMember(groupId);
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<AddGroupMemberFormValues>({
-    resolver: zodResolver(addGroupMemberSchema),
-    defaultValues: { userId: '', membershipType: 'REGULAR' },
-  });
-
-  async function onSubmit(values: AddGroupMemberFormValues) {
-    try {
-      await addMemberMutation.mutateAsync(values);
-      reset({ userId: '', membershipType: 'REGULAR' });
-    } catch {
-      // surfaced via addMemberMutation.error below
-    }
-  }
-
-  return (
-    <Card style={{ marginBottom: spacing.lg }}>
-      <Text variant="bodyStrong" style={{ marginBottom: spacing.xs }}>
-        Adicionar jogador
-      </Text>
-      <Text variant="caption" color="textTertiary" style={{ marginBottom: spacing.md }}>
-        Ainda não há busca por e-mail — peça o ID do usuário para quem você quer adicionar.
-      </Text>
-      <View style={{ gap: spacing.md }}>
-        <Controller
-          control={control}
-          name="userId"
-          render={({ field: { value, onChange, onBlur } }) => (
-            <Input
-              label="ID do usuário"
-              placeholder="00000000-0000-0000-0000-000000000000"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.userId?.message}
-              autoCapitalize="none"
-            />
-          )}
-        />
-        <Controller
-          control={control}
-          name="membershipType"
-          render={({ field: { value, onChange } }) => (
-            <ChipSelect options={MEMBERSHIP_OPTIONS} value={value} onChange={onChange} error={errors.membershipType?.message} />
-          )}
-        />
-        {addMemberMutation.isError ? (
-          <Text variant="caption" color="danger" accessibilityRole="alert">
-            {getApiErrorMessage(addMemberMutation.error, { CONFLICT: 'Este usuário já é membro do grupo.' })}
-          </Text>
-        ) : null}
-        <Button label="Adicionar" variant="secondary" onPress={handleSubmit(onSubmit)} loading={isSubmitting || addMemberMutation.isPending} />
-      </View>
-    </Card>
-  );
+interface MemberRowProps {
+  member: GroupMember;
+  currentUserId: string | undefined;
+  onPress: () => void;
 }
 
-function MemberRow({ member, groupId, canManage }: { member: GroupMember; groupId: string; canManage: boolean }) {
-  const updateMemberMutation = useUpdateGroupMember(groupId);
+/**
+ * Memoized: with 20-100 rows, avoiding a re-render of every row when
+ * unrelated state (search text, filter) changes elsewhere in the screen is
+ * worth the small overhead. Financial status is intentionally not shown
+ * here — the API has no finance module/field yet to gate by permission in
+ * the first place (see gestaofut-api docs/architecture.md, "Não
+ * implementado").
+ */
+const MemberRow = memo(function MemberRow({ member, currentUserId, onPress }: MemberRowProps) {
+  const name = displayNameForMember(member.userId, currentUserId);
 
   return (
-    <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <View style={{ flex: 1 }}>
-          <Text variant="bodyStrong" numberOfLines={1}>
-            {member.userId}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs }}>
-            <Badge label={MEMBERSHIP_LABELS[member.membershipType]} variant="neutral" />
-            <Badge label={member.status} variant={STATUS_BADGE_VARIANT[member.status]} />
+    <Pressable onPress={onPress} accessibilityRole="button">
+      <Card>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <Avatar name={name} size={40} />
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyStrong" numberOfLines={1}>
+              {name}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs }}>
+              <Badge label={MEMBERSHIP_LABELS[member.membershipType]} variant="neutral" />
+              <Badge label={STATUS_LABELS[member.status]} variant={STATUS_BADGE_VARIANT[member.status]} />
+            </View>
           </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </View>
-        {canManage && member.status !== 'INACTIVE' ? (
-          <Button
-            label="Remover"
-            variant="ghost"
-            size="md"
-            fullWidth={false}
-            loading={updateMemberMutation.isPending}
-            onPress={() => updateMemberMutation.mutate({ memberId: member.id, status: 'INACTIVE' })}
-          />
-        ) : null}
-      </View>
-    </Card>
+      </Card>
+    </Pressable>
   );
-}
+});

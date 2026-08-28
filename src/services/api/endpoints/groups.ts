@@ -134,3 +134,38 @@ export function updateGroupMember(
     body: input,
   });
 }
+
+/** The only way membership is permanently removed — sets status to INACTIVE. */
+export function deactivateGroupMember(groupId: string, memberId: string): Promise<{ member: GroupMember }> {
+  return apiFetch<{ member: GroupMember }>(`/groups/${groupId}/members/${memberId}/deactivate`, {
+    method: 'POST',
+  });
+}
+
+/** GUEST -> REGULAR, respecting max_regular_players. Rejects (409) if the member isn't currently a GUEST. */
+export function promoteGroupMember(groupId: string, memberId: string): Promise<{ member: GroupMember }> {
+  return apiFetch<{ member: GroupMember }>(`/groups/${groupId}/members/${memberId}/promote`, {
+    method: 'POST',
+  });
+}
+
+export interface GroupMemberHistoryEntry {
+  id: string;
+  groupMemberId: string;
+  fromMembershipType: MembershipType | null;
+  toMembershipType: MembershipType;
+  fromStatus: GroupMemberStatus | null;
+  toStatus: GroupMemberStatus;
+  actorUserId: string | null;
+  createdAt: string;
+}
+
+export function getGroupMemberHistory(
+  groupId: string,
+  memberId: string,
+  signal?: AbortSignal,
+): Promise<{ history: GroupMemberHistoryEntry[] }> {
+  return apiFetch<{ history: GroupMemberHistoryEntry[] }>(`/groups/${groupId}/members/${memberId}/history`, {
+    signal,
+  });
+}
