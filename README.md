@@ -3,11 +3,14 @@
 Aplicativo móvel (iOS/Android) do GestãoFut — plataforma de gestão de grupos
 esportivos recorrentes. Já implementados: autenticação real contra o
 `gestaofut-api` (registro, login, refresh automático, logout — ver
-[docs/api-client.md](docs/api-client.md)) e o núcleo de organizações/grupos
+[docs/api-client.md](docs/api-client.md)), o núcleo de organizações/grupos
 (seleção e criação de grupo, configurações básicas, membros, tabs
-dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md)).
-Jogos, financeiro, eventos e notificações ainda não existem. Veja
-[docs/architecture.md](docs/architecture.md) para o que vem a seguir.
+dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md))
+e jogos (próximo jogo em destaque na Home, lista/histórico, detalhes,
+confirmação de presença e painel administrativo — ver
+[docs/matches.md](docs/matches.md)). Financeiro, eventos e notificações
+ainda não existem. Veja [docs/architecture.md](docs/architecture.md) para
+o que vem a seguir.
 
 ## Stack
 
@@ -48,15 +51,15 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 
 ## Scripts
 
-| Script            | Descrição                                    |
-| ----------------- | --------------------------------------------- |
-| `pnpm start`       | Inicia o Metro bundler                        |
-| `pnpm android`     | Abre no Android                               |
-| `pnpm ios`         | Abre no iOS (macOS apenas)                    |
-| `pnpm lint`        | ESLint (`expo lint`)                          |
-| `pnpm typecheck`   | `tsc --noEmit`                                |
-| `pnpm test`        | Testes (Jest + React Native Testing Library)  |
-| `pnpm format`      | Prettier `--write`                            |
+| Script           | Descrição                                    |
+| ---------------- | -------------------------------------------- |
+| `pnpm start`     | Inicia o Metro bundler                       |
+| `pnpm android`   | Abre no Android                              |
+| `pnpm ios`       | Abre no iOS (macOS apenas)                   |
+| `pnpm lint`      | ESLint (`expo lint`)                         |
+| `pnpm typecheck` | `tsc --noEmit`                               |
+| `pnpm test`      | Testes (Jest + React Native Testing Library) |
+| `pnpm format`    | Prettier `--write`                           |
 
 ## Documentação
 

@@ -22,4 +22,10 @@ export const queryKeys = {
     memberHistory: (groupId: string, memberId: string) =>
       ['groups', groupId, 'members', memberId, 'history'] as const,
   },
+  matches: {
+    list: (groupId: string) => ['groups', groupId, 'matches'] as const,
+    detail: (groupId: string, matchId: string) => ['groups', groupId, 'matches', matchId] as const,
+    participants: (groupId: string, matchId: string) =>
+      ['groups', groupId, 'matches', matchId, 'participants'] as const,
+  },
 } as const;

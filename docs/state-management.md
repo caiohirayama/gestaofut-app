@@ -17,6 +17,21 @@ Exemplo real (não é feature de negócio, é a validação da própria
 arquitetura): `src/features/home/hooks/useApiStatus.ts` consulta `/health`
 do `gestaofut-api` e `HomeScreen` reage a `isPending`/`isError`/`data`.
 
+### Feedback instantâneo em mutations de baixa latência esperada
+
+A maioria das mutations do app só chama `invalidateQueries` no `onSuccess`
+(ver `useGroupMembers.ts`) — o padrão padrão, suficiente quando um pequeno
+atraso até o refetch terminar não importa para a UX. As mutations de
+confirmação de presença (`src/features/matches/hooks/useMatchParticipants.ts`)
+são a exceção deliberada: além de invalidar, elas também aplicam
+`queryClient.setQueryData` imediatamente com a resposta já autoritativa do
+servidor, substituindo a entrada correspondente na lista em cache. Isso
+existe porque confirmar presença é descrito como "abrir o app e confirmar
+em poucos segundos" — esperar um round-trip de refetch depois de já ter a
+resposta em mãos seria um atraso perceptível e desnecessário. O
+`invalidateQueries` continua rodando depois, como reconciliação de fundo,
+não como o caminho principal de feedback.
+
 ## 2. Zustand — estado local global
 
 Dois stores hoje, cada um guardando **apenas** estado genuinamente do
@@ -88,7 +103,7 @@ Seleção de grupo (src/features/groups/ — ver multi-tenancy.md)
 
 ## Autorização continua no backend
 
-Nada aqui decide *permissão*. `status: 'authenticated'` só controla qual
+Nada aqui decide _permissão_. `status: 'authenticated'` só controla qual
 grupo de rotas é exibido no cliente, e `activeGroupId`/`activeOrganizationId`
 só dizem qual grupo está "selecionado" — nunca o que o usuário pode fazer
 com ele. Para gating de UI (esconder uma tab, desabilitar um botão), o app

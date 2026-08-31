@@ -57,6 +57,11 @@ Isso mantém a navegação (Expo Router) e a lógica de tela desacopladas: troca
 o roteador não exigiria tocar nas screens, e testar uma screen não exige
 montar o Router.
 
+Isso já foi seguido ao implementar o módulo de partidas:
+`app/(app)/games.tsx` e `app/match/[matchId].tsx` só importam e renderizam
+`GamesScreen`/`MatchDetailsScreen` de `src/features/matches/screens/` — ver
+[matches.md](matches.md).
+
 ## Módulo `system` de referência
 
 Não é uma feature de produto — existe para provar a arquitetura ponta a
@@ -83,13 +88,38 @@ acréscimos:
 `secure-storage.ts` já estabelecidos — ver
 [state-management.md](state-management.md).
 
+## Feature `matches` (jogos, confirmação, admin)
+
+Segunda feature de produto real além de `groups`, e a mais central do
+produto (confirmar presença em um jogo). Detalhada em
+[matches.md](matches.md); do ponto de vista arquitetural segue a mesma
+estrutura `screens/hooks/utils/components` das demais features, com dois
+acréscimos deliberados:
+
+- **Reuso cross-feature em vez de duplicação**: `ChipSelect`
+  (`src/features/groups/components/`) e `displayNameForMember`
+  (`src/features/groups/utils/`) são reaproveitados diretamente por
+  `matches` em vez de duplicados — ambos já eram genéricos o suficiente (um
+  seletor de chip único, um placeholder de nome a partir de um id), e
+  `groups` só os teve primeiro por acaso de ordem de implementação.
+- **`InfoRow`** (`src/components/common/InfoRow.tsx`) foi extraído do
+  `PlayerDetailScreen` original para o design system comum assim que
+  `MatchDetailsScreen` precisou exatamente da mesma linha rótulo/valor — a
+  segunda ocorrência real é o ponto em que a duplicação vira abstração,
+  não antes.
+
+`matches` depende de `useGroupMembers`/`useGroup` (do módulo `groups`) e de
+`useCurrentUser` (do módulo `auth`) para resolver "qual é o meu
+`GroupMember`" e "qual o nome do grupo" — a mesma dependência cruzada entre
+features já aceita no restante do app.
+
 ## Por que este é um bom ponto de partida
 
 - Cada peça (design system, cliente HTTP, store, navegação) é testável
   isoladamente.
-- Adicionar uma feature real (jogos, financeiro) significa criar uma pasta
-  em `src/features/<nome>/` e registrar suas rotas — não exige mudar nada da
-  fundação, como `groups` já demonstrou.
+- Adicionar uma feature real (financeiro) significa criar uma pasta em
+  `src/features/<nome>/` e registrar suas rotas — não exige mudar nada da
+  fundação, como `groups` e `matches` já demonstraram.
 - Nenhuma decisão aqui pressupõe como o backend de negócio vai se parecer
   além do contrato já validado (`/health`, `/api/v1`, auth, organizations/
   groups).

@@ -1,5 +1,5 @@
-import { ComingSoonScreen } from '@/components/common/ComingSoonScreen';
+import { GamesScreen } from '@/features/matches/screens/GamesScreen';
 
 export default function Games() {
-  return <ComingSoonScreen title="Jogos" message="A gestão de jogos chega em breve." />;
+  return <GamesScreen />;
 }

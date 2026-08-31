@@ -17,7 +17,7 @@ app/
   (app)/           Fluxo autenticado, com um grupo ativo
     _layout.tsx    <Tabs> dinâmicas conforme permissions
     index.tsx      Início
-    games.tsx      Jogos (placeholder)
+    games.tsx      Jogos (GamesScreen)
     players.tsx    Jogadores (MembersScreen)
     finance.tsx    Financeiro (placeholder)
     more.tsx       Mais (grupo ativo, trocar grupo, configurações, "Sair")
@@ -26,6 +26,7 @@ app/
   switch-group.tsx    SwitchGroupScreen — idem
   add-player.tsx      AddPlayerScreen — idem
   player/[memberId].tsx  PlayerDetailScreen — idem, primeira rota dinâmica do app
+  match/[matchId].tsx    MatchDetailsScreen — idem, mesmo padrão de rota dinâmica
 ```
 
 ## Como a sessão decide o grupo
@@ -46,7 +47,7 @@ repositório).
 
 ## Como a sessão decide o grupo ativo
 
-Autenticado não é suficiente para entrar em `(app)`: falta saber *qual*
+Autenticado não é suficiente para entrar em `(app)`: falta saber _qual_
 grupo. `(group-setup)/index.tsx` (`GroupGateScreen`) resolve isso — carrega
 organizações/grupos/roles da API e decide entre auto-selecionar (0 ou 1
 opção viável), redirecionar para criação, mostrar um estado vazio, ou pedir
@@ -68,27 +69,31 @@ sem desregistrar a rota). As permissions vêm de
 `useActiveGroupPermissions()` — ver [multi-tenancy.md](multi-tenancy.md)
 para a tabela completa de qual permission gate cada tab.
 
-Início e Mais são sempre visíveis. Jogos e Financeiro ainda renderizam
+Início e Mais são sempre visíveis. Financeiro ainda renderiza
 `src/components/common/ComingSoonScreen.tsx` (reuso do `EmptyState` do
-design system) — a shell de navegação já existe, sem antecipar essas
-features. Jogadores já tem uma tela real (`MembersScreen` — lista com
-filtros/busca/permissions, ver [multi-tenancy.md](multi-tenancy.md)).
+design system) — a shell de navegação já existe, sem antecipar essa
+feature. Jogadores (`MembersScreen` — lista com filtros/busca/permissions,
+ver [multi-tenancy.md](multi-tenancy.md)) e Jogos (`GamesScreen` — lista de
+próximos jogos + histórico, ver [matches.md](matches.md)) já têm telas
+reais.
 
 ## Telas fora das tabs
 
-`app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx` e
-`app/player/[memberId].tsx` ficam soltas na raiz de `app/` (irmãs de
-`(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`: uma tela
-alcançada por `router.push` a partir de dentro de uma tab (ex.: "Adicionar
-jogador" ou tocar numa linha da lista de jogadores) precisa estar
+`app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx`,
+`app/player/[memberId].tsx` e `app/match/[matchId].tsx` ficam soltas na
+raiz de `app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`), não dentro de
+`(app)/`: uma tela alcançada por `router.push` a partir de dentro de uma
+tab (ex.: "Adicionar jogador", tocar numa linha da lista de jogadores, ou
+tocar no card de destaque/numa linha da lista de jogos) precisa estar
 registrada no `<Stack>` raiz, não na lista fixa de `<Tabs.Screen>` — é o
 padrão recomendado do Expo Router para uma tela "de detalhe" que empilha
 por cima da barra de tabs em vez de substituí-la.
 
-`player/[memberId].tsx` é a primeira rota dinâmica do app — navegada via
-`router.push({ pathname: '/player/[memberId]', params: { memberId } })`
-(forma tipada com objeto, não string interpolada) a partir de uma linha da
-`MembersScreen`.
+`player/[memberId].tsx` foi a primeira rota dinâmica do app;
+`match/[matchId].tsx` segue o mesmo padrão — navegada via
+`router.push({ pathname: '/match/[matchId]', params: { matchId } })` a
+partir de uma linha da `GamesScreen` ou do "Ver detalhes" do card de
+destaque da Home (ver [matches.md](matches.md)).
 
 ## Adicionando uma rota nova
 

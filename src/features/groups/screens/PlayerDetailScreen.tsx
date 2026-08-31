@@ -1,7 +1,16 @@
 import { useLocalSearchParams } from 'expo-router';
-import { type ReactNode } from 'react';
 import { Alert, View } from 'react-native';
-import { Avatar, Badge, Button, Card, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  ErrorState,
+  LoadingState,
+  Screen,
+  Text,
+} from '@/components/ui';
+import { InfoRow } from '@/components/common/InfoRow';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import type { GroupMemberHistoryEntry, MembershipType } from '@/services/api/endpoints/groups';
 import { useGroupStore } from '@/store/group-store';
@@ -16,7 +25,12 @@ import {
   useUpdateGroupMember,
 } from '../hooks/useGroupMembers';
 import { displayNameForMember } from '../utils/member-display';
-import { MEMBERSHIP_LABELS, MEMBERSHIP_OPTIONS, STATUS_BADGE_VARIANT, STATUS_LABELS } from '../utils/member-labels';
+import {
+  MEMBERSHIP_LABELS,
+  MEMBERSHIP_OPTIONS,
+  STATUS_BADGE_VARIANT,
+  STATUS_LABELS,
+} from '../utils/member-labels';
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR');
@@ -40,8 +54,16 @@ function historyDescription(entry: GroupMemberHistoryEntry): string {
 export function PlayerDetailScreen() {
   const { memberId } = useLocalSearchParams<{ memberId: string }>();
   const groupId = useGroupStore((state) => state.activeGroupId);
-  const { data: member, isPending, isError, refetch } = useGroupMember(groupId ?? undefined, memberId);
-  const { data: history, isPending: isHistoryPending } = useGroupMemberHistory(groupId ?? undefined, memberId);
+  const {
+    data: member,
+    isPending,
+    isError,
+    refetch,
+  } = useGroupMember(groupId ?? undefined, memberId);
+  const { data: history, isPending: isHistoryPending } = useGroupMemberHistory(
+    groupId ?? undefined,
+    memberId,
+  );
   const { data: me } = useCurrentUser();
   const { can } = useActiveGroupPermissions();
   const canManage = can('member.manage');
@@ -75,7 +97,10 @@ export function PlayerDetailScreen() {
       `Alterar ${name} de ${MEMBERSHIP_LABELS[member.membershipType]} para ${MEMBERSHIP_LABELS[newType]}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: () => updateMutation.mutate({ memberId: member.id, membershipType: newType }) },
+        {
+          text: 'Confirmar',
+          onPress: () => updateMutation.mutate({ memberId: member.id, membershipType: newType }),
+        },
       ],
     );
   }
@@ -87,7 +112,11 @@ export function PlayerDetailScreen() {
       `Tem certeza que deseja desativar ${name}? Essa é a única forma de remover a vaga permanentemente — faltas ou pendências financeiras nunca fazem isso sozinhas.`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Desativar', style: 'destructive', onPress: () => deactivateMutation.mutate(member.id) },
+        {
+          text: 'Desativar',
+          style: 'destructive',
+          onPress: () => deactivateMutation.mutate(member.id),
+        },
       ],
     );
   }
@@ -102,7 +131,14 @@ export function PlayerDetailScreen() {
 
   return (
     <Screen scroll>
-      <View style={{ alignItems: 'center', marginTop: spacing.xxl, marginBottom: spacing.xl, gap: spacing.sm }}>
+      <View
+        style={{
+          alignItems: 'center',
+          marginTop: spacing.xxl,
+          marginBottom: spacing.xl,
+          gap: spacing.sm,
+        }}
+      >
         <Avatar name={name} size={64} />
         <Text variant="title">{name}</Text>
       </View>
@@ -119,7 +155,12 @@ export function PlayerDetailScreen() {
           />
           <InfoRow
             label="Status"
-            value={<Badge label={STATUS_LABELS[member.status]} variant={STATUS_BADGE_VARIANT[member.status]} />}
+            value={
+              <Badge
+                label={STATUS_LABELS[member.status]}
+                variant={STATUS_BADGE_VARIANT[member.status]}
+              />
+            }
           />
         </Card>
 
@@ -192,16 +233,5 @@ export function PlayerDetailScreen() {
         ) : null}
       </View>
     </Screen>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
-      <Text variant="caption" color="textSecondary">
-        {label}
-      </Text>
-      {typeof value === 'string' ? <Text variant="body">{value}</Text> : value}
-    </View>
   );
 }

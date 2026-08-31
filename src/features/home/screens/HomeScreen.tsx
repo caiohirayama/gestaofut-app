@@ -1,9 +1,12 @@
 import { ActivityIndicator, View } from 'react-native';
 import { Badge, Card, Screen, Text } from '@/components/ui';
+import { NextMatchCard } from '@/features/matches/components/NextMatchCard';
+import { useGroupStore } from '@/store/group-store';
 import { spacing } from '@/theme';
 import { useApiStatus } from '../hooks/useApiStatus';
 
 export function HomeScreen() {
+  const groupId = useGroupStore((state) => state.activeGroupId);
   const { data, isPending, isError, refetch, isRefetching } = useApiStatus();
 
   const statusMessage = isPending
@@ -20,6 +23,12 @@ export function HomeScreen() {
           Bem-vindo ao GestãoFut.
         </Text>
       </View>
+
+      {groupId ? (
+        <View style={{ marginBottom: spacing.xl }}>
+          <NextMatchCard groupId={groupId} />
+        </View>
+      ) : null}
 
       <Card>
         <View

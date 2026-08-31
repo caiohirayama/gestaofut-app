@@ -52,12 +52,16 @@ const group = await apiFetch<Group>(`/groups/${id}`, { signal });
 
 ## Endpoints (`src/services/api/endpoints/`)
 
-Cada arquivo agrupa as chamadas de um recurso: `system.ts` (`getHealth()`)
-e `auth.ts` (`register`, `login`, `refresh`, `logout`, `getMe` — tipos
-espelham exatamente o contrato OpenAPI do `gestaofut-api`, sem campo
-inventado). `getHealth()` é a exceção que confirma a regra: chama
-`/health` diretamente (sem `apiFetch`/`API_BASE_URL`/auth), porque é um
-endpoint operacional do `gestaofut-api`, não de negócio.
+Cada arquivo agrupa as chamadas de um recurso: `system.ts` (`getHealth()`),
+`auth.ts` (`register`, `login`, `refresh`, `logout`, `getMe`),
+`organizations.ts`, `groups.ts` e `matches.ts` (`listMatches`, `getMatch`,
+`listMatchParticipants`, `confirmMatchParticipant`,
+`declineMatchParticipant`, `cancelMatchParticipant` — ver
+[matches.md](matches.md)) — tipos espelham exatamente o contrato OpenAPI do
+`gestaofut-api`, sem campo inventado. `getHealth()` é a exceção que
+confirma a regra: chama `/health` diretamente (sem
+`apiFetch`/`API_BASE_URL`/auth), porque é um endpoint operacional do
+`gestaofut-api`, não de negócio.
 
 Ao adicionar um recurso real, o padrão é:
 
