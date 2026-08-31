@@ -19,12 +19,13 @@ app/
     index.tsx      Início
     games.tsx      Jogos (GamesScreen)
     players.tsx    Jogadores (MembersScreen)
-    finance.tsx    Financeiro (placeholder)
-    more.tsx       Mais (grupo ativo, trocar grupo, configurações, "Sair")
+    finance.tsx    Financeiro (FinanceScreen — dashboard + pendências, ver docs/finance.md)
+    more.tsx       Mais (grupo ativo, meu financeiro, trocar grupo, configurações, "Sair")
   group-settings.tsx  GroupSettingsScreen — fora de (app), empilhada por
                       cima das tabs (ver "Telas fora das tabs" abaixo)
   switch-group.tsx    SwitchGroupScreen — idem
   add-player.tsx      AddPlayerScreen — idem
+  my-finance.tsx      MyFinanceScreen — idem (ver docs/finance.md)
   player/[memberId].tsx  PlayerDetailScreen — idem, primeira rota dinâmica do app
   matches/[matchId].tsx  MatchDetailsScreen — idem, mesmo padrão de rota dinâmica
 ```
@@ -69,25 +70,28 @@ sem desregistrar a rota). As permissions vêm de
 `useActiveGroupPermissions()` — ver [multi-tenancy.md](multi-tenancy.md)
 para a tabela completa de qual permission gate cada tab.
 
-Início e Mais são sempre visíveis. Financeiro ainda renderiza
-`src/components/common/ComingSoonScreen.tsx` (reuso do `EmptyState` do
-design system) — a shell de navegação já existe, sem antecipar essa
-feature. Jogadores (`MembersScreen` — lista com filtros/busca/permissions,
-ver [multi-tenancy.md](multi-tenancy.md)) e Jogos (`GamesScreen` — lista de
-próximos jogos + histórico, ver [matches.md](matches.md)) já têm telas
-reais.
+Início e Mais são sempre visíveis. Jogadores (`MembersScreen` — lista com
+filtros/busca/permissions, ver [multi-tenancy.md](multi-tenancy.md)), Jogos
+(`GamesScreen` — lista de próximos jogos + histórico, ver
+[matches.md](matches.md)) e Financeiro (`FinanceScreen` — dashboard mensal
++ lista de pendências, só para `finance.read`, ver [finance.md](finance.md))
+já têm telas reais.
 
 ## Telas fora das tabs
 
 `app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx`,
-`app/player/[memberId].tsx` e `app/matches/[matchId].tsx` ficam soltas na
-raiz de `app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`), não dentro de
-`(app)/`: uma tela alcançada por `router.push` a partir de dentro de uma
-tab (ex.: "Adicionar jogador", tocar numa linha da lista de jogadores, ou
-tocar no card de destaque/numa linha da lista de jogos) precisa estar
-registrada no `<Stack>` raiz, não na lista fixa de `<Tabs.Screen>` — é o
-padrão recomendado do Expo Router para uma tela "de detalhe" que empilha
-por cima da barra de tabs em vez de substituí-la.
+`app/my-finance.tsx`, `app/player/[memberId].tsx` e
+`app/matches/[matchId].tsx` ficam soltas na raiz de `app/` (irmãs de
+`(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`: uma tela
+alcançada por `router.push` a partir de dentro de uma tab (ex.: "Adicionar
+jogador", tocar numa linha da lista de jogadores, ou tocar no card de
+destaque/numa linha da lista de jogos) precisa estar registrada no
+`<Stack>` raiz, não na lista fixa de `<Tabs.Screen>` — é o padrão
+recomendado do Expo Router para uma tela "de detalhe" que empilha por cima
+da barra de tabs em vez de substituí-la. `my-finance.tsx` segue essa mesma
+regra mesmo não tendo uma linha/card específico que leve até ela — é
+alcançada pelo botão "Meu financeiro" em `MoreScreen`, mas continua sendo
+uma tela de detalhe empilhada, não uma tab (ver [finance.md](finance.md)).
 
 `player/[memberId].tsx` foi a primeira rota dinâmica do app;
 `matches/[matchId].tsx` segue o mesmo padrão — navegada via

@@ -6,13 +6,17 @@ esportivos recorrentes. Já implementados: autenticação real contra o
 [docs/api-client.md](docs/api-client.md)), o núcleo de organizações/grupos
 (seleção e criação de grupo, configurações básicas, membros, tabs
 dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md))
-e jogos (próximo jogo em destaque na Home, lista/histórico, detalhes,
+jogos (próximo jogo em destaque na Home, lista/histórico, detalhes,
 confirmação de presença, entrada self-service de avulsos com fila de
 espera e ofertas de vaga com contador, e painel administrativo com fila/
-ordem/ofertas ativas — ver [docs/matches.md](docs/matches.md)). Financeiro,
-eventos e notificações push ainda não existem, mas a rota
-`/matches/{matchId}` já está preparada como alvo de um deep link futuro.
-Veja [docs/architecture.md](docs/architecture.md) para o que vem a seguir.
+ordem/ofertas ativas — ver [docs/matches.md](docs/matches.md)) e financeiro
+(dashboard mensal e lista de pendências para `finance.read`/`finance.manage`,
+pagamento manual com confirmação, e "Meu financeiro" — mensalidade/avulsos/
+pagamentos/pendências somente do próprio usuário — ver
+[docs/finance.md](docs/finance.md)). Eventos e notificações push ainda não
+existem, mas a rota `/matches/{matchId}` já está preparada como alvo de um
+deep link futuro. Veja [docs/architecture.md](docs/architecture.md) para o
+que vem a seguir.
 
 ## Stack
 
@@ -22,6 +26,7 @@ Veja [docs/architecture.md](docs/architecture.md) para o que vem a seguir.
 - Zustand (estado local global)
 - React Hook Form + Zod (formulários e validação)
 - Expo SecureStore (tokens sensíveis)
+- `decimal.js` (aritmética monetária segura no dashboard financeiro — ver [docs/finance.md](docs/finance.md))
 - pnpm
 
 Apenas iOS e Android — sem web/PWA/Next.js.
@@ -71,4 +76,6 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 - [docs/design-system.md](docs/design-system.md) — componentes base e tokens visuais
 - [docs/state-management.md](docs/state-management.md) — TanStack Query vs. Zustand vs. SecureStore
 - [docs/api-client.md](docs/api-client.md) — cliente HTTP, erros, query keys, refresh automático
+- [docs/matches.md](docs/matches.md) — jogos, confirmação de presença, fila/oferta, admin
+- [docs/finance.md](docs/finance.md) — mensalidades, cobranças avulsas, pagamentos, pendências
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature

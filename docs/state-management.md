@@ -32,6 +32,17 @@ resposta em mãos seria um atraso perceptível e desnecessário. O
 `invalidateQueries` continua rodando depois, como reconciliação de fundo,
 não como o caminho principal de feedback.
 
+`useMonthlyFees`/`useCharges` (`finance`, ver [finance.md](finance.md))
+seguem esse mesmo padrão de `setQueryData` para waive/cancel (uma
+transição simples de um item já em cache). Mas
+`useRecordManualPayment` — que pode quitar tanto uma mensalidade quanto
+uma cobrança, e ambas alimentam o mesmo dashboard agregado — volta ao
+padrão padrão de só invalidar: um pagamento manual não é uma ação de
+"poucos segundos" no mesmo sentido crítico de confirmar presença, e
+patchar manualmente todas as árvores de cache que um pagamento pode
+afetar seria mais frágil do que deixar um refetch reconciliar tudo de
+uma vez.
+
 ## 2. Zustand — estado local global
 
 Dois stores hoje, cada um guardando **apenas** estado genuinamente do

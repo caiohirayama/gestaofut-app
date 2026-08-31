@@ -44,6 +44,7 @@ export function MoreScreen() {
             {activeGroup.name}
           </Text>
           <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+            <Button label="Meu financeiro" variant="secondary" onPress={() => router.push('/my-finance')} />
             <Button label="Configurações do grupo" variant="secondary" onPress={() => router.push('/group-settings')} />
             {groups.length > 1 ? (
               <Button label="Trocar grupo" variant="ghost" onPress={() => router.push('/switch-group')} />

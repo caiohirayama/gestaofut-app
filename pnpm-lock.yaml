@@ -17,6 +17,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.102.6
         version: 5.102.6(react@19.2.3)
+      decimal.js:
+        specifier: ^10.6.0
+        version: 10.6.0
       expo:
         specifier: ^57.0.17
         version: 57.0.17(c25247f496a4a68f0463a06321250387)

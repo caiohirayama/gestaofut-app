@@ -127,9 +127,10 @@ sai correta da mesma regra.
   também é por `userId`, pelo mesmo motivo. `Avatar` sempre cai no
   fallback de iniciais (nunca há `uri` de foto). Nomes/fotos reais
   exigiriam um endpoint de perfil (público ou em lote) na API.
-- **Não há situação financeira nenhuma para mostrar.** O `gestaofut-api`
-  ainda não tem módulo financeiro (nem um campo como "inadimplente" em
-  `GroupMember`) — está listado como "Não implementado" na documentação
-  desse repositório. `MembersScreen` não renderiza nenhum indicador
-  financeiro por linha (nem um placeholder vazio) até que esse dado exista
-  de verdade na API.
+- **`MembersScreen` ainda não mostra um indicador financeiro por linha.**
+  O `gestaofut-api` já tem módulo financeiro (mensalidades, cobranças,
+  pagamentos — ver [finance.md](finance.md)), mas nada em `GroupMember`
+  carrega um campo agregado como "inadimplente"; cruzar isso exigiria
+  buscar `GET .../finance/monthly-fees?status=OVERDUE` por fora e juntar
+  no cliente, o que `MembersScreen` não faz hoje — quem precisa dessa
+  visão usa a tab Financeiro (`FinanceScreen`) diretamente.

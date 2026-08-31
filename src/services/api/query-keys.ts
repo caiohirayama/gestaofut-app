@@ -28,4 +28,12 @@ export const queryKeys = {
     participants: (groupId: string, matchId: string) =>
       ['groups', groupId, 'matches', matchId, 'participants'] as const,
   },
+  finance: {
+    monthlyFees: (groupId: string) => ['groups', groupId, 'finance', 'monthly-fees'] as const,
+    myMonthlyFees: (groupId: string) => ['groups', groupId, 'finance', 'monthly-fees', 'me'] as const,
+    charges: (groupId: string) => ['groups', groupId, 'finance', 'charges'] as const,
+    myCharges: (groupId: string) => ['groups', groupId, 'finance', 'charges', 'me'] as const,
+    payments: (groupId: string) => ['groups', groupId, 'finance', 'payments'] as const,
+    myPayments: (groupId: string) => ['groups', groupId, 'finance', 'payments', 'me'] as const,
+  },
 } as const;

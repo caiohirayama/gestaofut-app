@@ -1,5 +1,5 @@
-import { ComingSoonScreen } from '@/components/common/ComingSoonScreen';
+import { FinanceScreen } from '@/features/finance/screens/FinanceScreen';
 
 export default function Finance() {
-  return <ComingSoonScreen title="Financeiro" message="O controle financeiro chega em breve." />;
+  return <FinanceScreen />;
 }

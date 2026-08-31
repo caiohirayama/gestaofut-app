@@ -113,13 +113,36 @@ acréscimos deliberados:
 `GroupMember`" e "qual o nome do grupo" — a mesma dependência cruzada entre
 features já aceita no restante do app.
 
+## Feature `finance` (mensalidades, cobranças, pagamentos)
+
+Terceira feature de produto real, também `screens/hooks/utils/components`.
+Detalhada em [finance.md](finance.md); do ponto de vista arquitetural:
+
+- **Mesmo racional de dependência cruzada** de `matches` — depende de
+  `useGroupMembers` e `displayNameForMember` (`groups`), `useCurrentUser`
+  (`auth`) e `useGroupSettings` (`groups`, para a `currency`/`monthlyFee`
+  vigentes).
+- **`PendingItemRow` é reaproveitado tanto pela tela de admin
+  (`FinanceScreen`, com `canManage={true}`) quanto pela do jogador
+  (`MyFinanceScreen`, com `canManage={false}`)** — um único componente
+  decide o que mostrar a partir de uma prop booleana em vez de duas
+  variantes quase idênticas, o mesmo racional que já levou
+  `ConfirmationButtons` a servir tanto o card de destaque da Home quanto
+  `MatchDetailsScreen` em `matches`.
+- **Primeira dependência nova do app para aritmética decimal**
+  (`decimal.js`, `src/features/finance/utils/money.ts`) — introduzida
+  porque esta é a primeira feature que soma valores `NUMERIC` no cliente
+  (os totais do dashboard); `matches`/`groups` só armazenavam e exibiam
+  esses valores como texto, nunca os somavam.
+
 ## Por que este é um bom ponto de partida
 
 - Cada peça (design system, cliente HTTP, store, navegação) é testável
   isoladamente.
-- Adicionar uma feature real (financeiro) significa criar uma pasta em
+- Adicionar uma feature real significa criar uma pasta em
   `src/features/<nome>/` e registrar suas rotas — não exige mudar nada da
-  fundação, como `groups` e `matches` já demonstraram.
+  fundação, como `groups`, `matches` e `finance` (ver
+  [finance.md](finance.md)) já demonstraram.
 - Nenhuma decisão aqui pressupõe como o backend de negócio vai se parecer
   além do contrato já validado (`/health`, `/api/v1`, auth, organizations/
   groups).
