@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as matchEndpoints from '@/services/api/endpoints/matches';
 import { ConfirmationButtons } from './ConfirmationButtons';
 
@@ -17,17 +17,20 @@ function participant(
     status: 'PENDING',
     confirmedAt: null,
     cancelledAt: null,
+    offeredAt: null,
+    offerExpiresAt: null,
+    queuePosition: null,
     createdAt: '',
     updatedAt: '',
     ...overrides,
   };
 }
 
-function renderButtons(p: matchEndpoints.MatchParticipant) {
+function renderButtons(p: matchEndpoints.MatchParticipant, participants: matchEndpoints.MatchParticipant[] = [p]) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ConfirmationButtons groupId={GROUP_ID} matchId={MATCH_ID} participant={p} />
+      <ConfirmationButtons groupId={GROUP_ID} matchId={MATCH_ID} participant={p} participants={participants} />
     </QueryClientProvider>,
   );
 }
@@ -57,14 +60,6 @@ describe('ConfirmationButtons', () => {
     await waitFor(() =>
       expect(declineSpy).toHaveBeenCalledWith(GROUP_ID, MATCH_ID, 'participant-1'),
     );
-  });
-
-  it('shows a waitlist hint for WAITLISTED, while still offering both actions', () => {
-    renderButtons(participant({ status: 'WAITLISTED' }));
-
-    expect(screen.getByText(/lista de espera/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Vou jogar' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Não vou' })).toBeTruthy();
   });
 
   it('prevents double submit: both buttons are disabled while a confirmation is in flight', async () => {
@@ -146,5 +141,109 @@ describe('ConfirmationButtons', () => {
 
     expect(screen.getByText('Você cancelou sua presença neste jogo.')).toBeTruthy();
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  describe('WAITLISTED ("NA FILA")', () => {
+    it('shows the waiting message, an approximate position, and only a "Sair da fila" button — no "Vou jogar"', () => {
+      const waiting = participant({ id: 'me', status: 'WAITLISTED', queuePosition: 2 });
+      const ahead = participant({ id: 'ahead', status: 'WAITLISTED', queuePosition: 1 });
+      renderButtons(waiting, [ahead, waiting]);
+
+      expect(screen.getByText('Você está na lista de espera.')).toBeTruthy();
+      expect(screen.getByText('Posição aproximada: 2')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Sair da fila' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Vou jogar' })).toBeNull();
+    });
+
+    it('leaving the queue calls decline, not confirm', async () => {
+      const declineSpy = jest
+        .spyOn(matchEndpoints, 'declineMatchParticipant')
+        .mockResolvedValue(participant({ status: 'DECLINED' }));
+      const waiting = participant({ status: 'WAITLISTED', queuePosition: 1 });
+      renderButtons(waiting);
+
+      fireEvent.press(screen.getByRole('button', { name: 'Sair da fila' }));
+
+      await waitFor(() =>
+        expect(declineSpy).toHaveBeenCalledWith(GROUP_ID, MATCH_ID, 'participant-1'),
+      );
+    });
+  });
+
+  describe('OFFERED ("OFERTA")', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('shows the high-priority offer banner with ACEITAR VAGA / RECUSAR and a countdown derived from offerExpiresAt', () => {
+      const offered = participant({
+        status: 'OFFERED',
+        offeredAt: '2026-01-01T00:00:00.000Z',
+        offerExpiresAt: '2026-01-01T00:27:42.000Z',
+      });
+      renderButtons(offered);
+
+      expect(screen.getByText('⚽ Uma vaga abriu para você.')).toBeTruthy();
+      expect(screen.getByText('Você tem 27:42 para confirmar.')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'ACEITAR VAGA' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'RECUSAR' })).toBeTruthy();
+    });
+
+    it('the countdown re-derives from offerExpiresAt on every tick instead of being stored as its own state', () => {
+      const offered = participant({ status: 'OFFERED', offerExpiresAt: '2026-01-01T00:01:00.000Z' });
+      renderButtons(offered);
+
+      expect(screen.getByText('Você tem 1:00 para confirmar.')).toBeTruthy();
+
+      act(() => {
+        jest.advanceTimersByTime(30000);
+      });
+
+      expect(screen.getByText('Você tem 0:30 para confirmar.')).toBeTruthy();
+    });
+
+    it('ACEITAR VAGA calls confirm', async () => {
+      const confirmSpy = jest
+        .spyOn(matchEndpoints, 'confirmMatchParticipant')
+        .mockResolvedValue(participant({ status: 'CONFIRMED' }));
+      const offered = participant({ status: 'OFFERED', offerExpiresAt: '2026-01-01T00:01:00.000Z' });
+      renderButtons(offered);
+
+      fireEvent.press(screen.getByRole('button', { name: 'ACEITAR VAGA' }));
+
+      await waitFor(() =>
+        expect(confirmSpy).toHaveBeenCalledWith(GROUP_ID, MATCH_ID, 'participant-1'),
+      );
+    });
+
+    it('RECUSAR calls decline', async () => {
+      const declineSpy = jest
+        .spyOn(matchEndpoints, 'declineMatchParticipant')
+        .mockResolvedValue(participant({ status: 'DECLINED' }));
+      const offered = participant({ status: 'OFFERED', offerExpiresAt: '2026-01-01T00:01:00.000Z' });
+      renderButtons(offered);
+
+      fireEvent.press(screen.getByRole('button', { name: 'RECUSAR' }));
+
+      await waitFor(() =>
+        expect(declineSpy).toHaveBeenCalledWith(GROUP_ID, MATCH_ID, 'participant-1'),
+      );
+    });
+
+    it('disables ACEITAR VAGA once the countdown reaches zero', () => {
+      const offered = participant({ status: 'OFFERED', offerExpiresAt: '2026-01-01T00:00:05.000Z' });
+      renderButtons(offered);
+
+      act(() => {
+        jest.advanceTimersByTime(10000);
+      });
+
+      expect(screen.getByRole('button', { name: 'ACEITAR VAGA' }).props.accessibilityState.disabled).toBe(true);
+    });
   });
 });

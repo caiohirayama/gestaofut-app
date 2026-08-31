@@ -49,6 +49,12 @@ export interface MatchParticipant {
   status: ParticipantStatus;
   confirmedAt: string | null;
   cancelledAt: string | null;
+  /** Set while `status === 'OFFERED'`; cleared once accepted, declined, or expired. */
+  offeredAt: string | null;
+  /** The offer's deadline — the only source of truth for a countdown, never a locally-owned timer. */
+  offerExpiresAt: string | null;
+  /** Position in the WAITLISTED queue for this participant's pool (REGULAR shares a pool with GUEST); `null` when not queued. */
+  queuePosition: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,7 +85,19 @@ export function listMatchParticipants(
   );
 }
 
-/** "Vou jogar" from PENDING/OFFERED/WAITLISTED. Can fail with 409 if the match's capacity fills concurrently — see gestaofut-api docs/matches.md. */
+/**
+ * "GUEST solicita participação" — self-service, only for an active GUEST
+ * group member on an OPEN match. Resolves to `CONFIRMED` if the pool has
+ * room, `WAITLISTED` (queued) otherwise — the server decides, never the
+ * client. See gestaofut-api docs/matches.md, "REGRA".
+ */
+export function requestGuestParticipation(groupId: string, matchId: string): Promise<MatchParticipant> {
+  return apiFetch<MatchParticipant>(`/groups/${groupId}/matches/${matchId}/participants/request`, {
+    method: 'POST',
+  });
+}
+
+/** "Vou jogar" from PENDING/OFFERED. Can fail with 409 if the match's capacity fills concurrently — see gestaofut-api docs/matches.md. */
 export function confirmMatchParticipant(
   groupId: string,
   matchId: string,

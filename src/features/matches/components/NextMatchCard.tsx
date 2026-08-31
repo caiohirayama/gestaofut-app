@@ -4,6 +4,7 @@ import { Badge, Card, EmptyState, LoadingState, Text } from '@/components/ui';
 import { useGroup } from '@/features/groups/hooks/useGroup';
 import { spacing } from '@/theme';
 import { ConfirmationButtons } from './ConfirmationButtons';
+import { RequestParticipationCard } from './RequestParticipationCard';
 import { useMatchParticipants } from '../hooks/useMatchParticipants';
 import { useMyMatchParticipant } from '../hooks/useMyMatchParticipant';
 import { useNextMatch } from '../hooks/useNextMatch';
@@ -26,7 +27,7 @@ export function NextMatchCard({ groupId }: { groupId: string }) {
   const { data: match, isPending, isError } = useNextMatch(groupId);
   const { data: group } = useGroup(groupId);
   const { data: participants } = useMatchParticipants(groupId, match?.id);
-  const { data: myParticipant } = useMyMatchParticipant(groupId, match?.id);
+  const { data: myParticipant, myMember } = useMyMatchParticipant(groupId, match?.id);
 
   if (isPending) {
     return (
@@ -88,14 +89,27 @@ export function NextMatchCard({ groupId }: { groupId: string }) {
       </View>
 
       {isOpen && myParticipant ? (
-        <ConfirmationButtons groupId={groupId} matchId={match.id} participant={myParticipant} />
+        <ConfirmationButtons
+          groupId={groupId}
+          matchId={match.id}
+          participant={myParticipant}
+          participants={participants ?? []}
+        />
+      ) : null}
+
+      {isOpen && !myParticipant && myMember?.membershipType === 'GUEST' && myMember.status === 'ACTIVE' ? (
+        <RequestParticipationCard
+          groupId={groupId}
+          matchId={match.id}
+          isFull={regularSummary.capacity !== null && regularSummary.confirmed >= regularSummary.capacity}
+        />
       ) : null}
 
       <Text
         variant="label"
         color="primary"
         style={{ marginTop: spacing.md, textAlign: 'center' }}
-        onPress={() => router.push({ pathname: '/match/[matchId]', params: { matchId: match.id } })}
+        onPress={() => router.push({ pathname: '/matches/[matchId]', params: { matchId: match.id } })}
         accessibilityRole="button"
       >
         Ver detalhes

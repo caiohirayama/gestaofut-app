@@ -38,7 +38,7 @@ export function GamesScreen() {
     ({ item }: ListRenderItemInfo<Match>) => (
       <MatchListRow
         match={item}
-        onPress={() => router.push({ pathname: '/match/[matchId]', params: { matchId: item.id } })}
+        onPress={() => router.push({ pathname: '/matches/[matchId]', params: { matchId: item.id } })}
       />
     ),
     [],

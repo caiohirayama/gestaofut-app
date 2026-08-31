@@ -4,7 +4,8 @@ import { Badge, Text } from '@/components/ui';
 import { displayNameForMember } from '@/features/groups/utils/member-display';
 import type { GroupMember } from '@/services/api/endpoints/groups';
 import type { MatchParticipant } from '@/services/api/endpoints/matches';
-import { spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
+import { useCountdown } from '../hooks/useCountdown';
 import { PARTICIPANT_STATUS_BADGE_VARIANT, PARTICIPANT_STATUS_LABELS } from '../utils/match-labels';
 import { buildAdminRoster } from '../utils/participant-summary';
 
@@ -17,10 +18,12 @@ export interface ParticipantsAdminPanelProps {
 
 /**
  * "Quando autorizado" (`match.manage`) roster view: confirmados / pendentes
- * / ausentes / goleiros / avulsos — see gestaofut-app docs/matches.md.
- * Reuses `displayNameForMember` from the `groups` feature (same id-based
- * placeholder naming already used in `MembersScreen`/`PlayerDetailScreen` —
- * the API has no user-profile lookup, see gestaofut-api docs/multi-tenancy.md).
+ * / ausentes / goleiros / avulsos, plus the fila de espera (in order, per
+ * pool) and active offers with a live countdown — see gestaofut-app
+ * docs/matches.md, "ADMIN". Reuses `displayNameForMember` from the `groups`
+ * feature (same id-based placeholder naming already used in
+ * `MembersScreen`/`PlayerDetailScreen` — the API has no user-profile lookup,
+ * see gestaofut-api docs/multi-tenancy.md).
  */
 export function ParticipantsAdminPanel({
   participants,
@@ -64,6 +67,63 @@ export function ParticipantsAdminPanel({
         nameFor={nameFor}
         showStatus
       />
+      <RosterSection
+        title={`Fila de espera - linha (${roster.waitlist.length})`}
+        participants={roster.waitlist}
+        nameFor={nameFor}
+        numbered
+      />
+      <RosterSection
+        title={`Fila de espera - goleiros (${roster.goalkeeperWaitlist.length})`}
+        participants={roster.goalkeeperWaitlist}
+        nameFor={nameFor}
+        numbered
+      />
+      <View>
+        <Text variant="bodyStrong" style={{ marginBottom: spacing.sm }}>
+          Ofertas ativas ({roster.activeOffers.length})
+        </Text>
+        {roster.activeOffers.length === 0 ? (
+          <Text variant="caption" color="textTertiary">
+            Nenhuma oferta em aberto.
+          </Text>
+        ) : (
+          <View style={{ gap: spacing.xs }}>
+            {roster.activeOffers.map((participant) => (
+              <OfferRow key={participant.id} participant={participant} name={nameFor(participant.groupMemberId)} />
+            ))}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+interface OfferRowProps {
+  participant: MatchParticipant;
+  name: string;
+}
+
+function OfferRow({ participant, name }: OfferRowProps) {
+  const countdown = useCountdown(participant.offerExpiresAt);
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.sm,
+        backgroundColor: colors.warningSoft,
+        borderRadius: radius.md,
+      }}
+    >
+      <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
+        {name}
+      </Text>
+      <Text variant="caption" color="warning">
+        {countdown.isExpired ? 'Expirada' : countdown.formatted}
+      </Text>
     </View>
   );
 }
@@ -73,9 +133,17 @@ interface RosterSectionProps {
   participants: MatchParticipant[];
   nameFor: (groupMemberId: string) => string;
   showStatus?: boolean;
+  /** Shows each row's 1-based order — used for the waitlist queue, where "ordem" is the point. */
+  numbered?: boolean;
 }
 
-function RosterSection({ title, participants, nameFor, showStatus = false }: RosterSectionProps) {
+function RosterSection({
+  title,
+  participants,
+  nameFor,
+  showStatus = false,
+  numbered = false,
+}: RosterSectionProps) {
   return (
     <View>
       <Text variant="bodyStrong" style={{ marginBottom: spacing.sm }}>
@@ -87,7 +155,7 @@ function RosterSection({ title, participants, nameFor, showStatus = false }: Ros
         </Text>
       ) : (
         <View style={{ gap: spacing.xs }}>
-          {participants.map((participant) => (
+          {participants.map((participant, index) => (
             <View
               key={participant.id}
               style={{
@@ -97,6 +165,7 @@ function RosterSection({ title, participants, nameFor, showStatus = false }: Ros
               }}
             >
               <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
+                {numbered ? `${index + 1}. ` : ''}
                 {nameFor(participant.groupMemberId)}
               </Text>
               {showStatus ? (

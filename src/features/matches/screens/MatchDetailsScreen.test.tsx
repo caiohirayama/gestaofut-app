@@ -60,6 +60,9 @@ function participant(
     status: 'PENDING',
     confirmedAt: null,
     cancelledAt: null,
+    offeredAt: null,
+    offerExpiresAt: null,
+    queuePosition: null,
     createdAt: '',
     updatedAt: '',
     ...overrides,
@@ -71,9 +74,15 @@ function renderScreen(
     role?: 'MEMBER' | 'ADMIN';
     match?: matchEndpoints.Match;
     participants?: matchEndpoints.MatchParticipant[];
+    member?: groupEndpoints.GroupMember;
   } = {},
 ) {
-  const { role = 'MEMBER', match = baseMatch(), participants = [participant()] } = options;
+  const {
+    role = 'MEMBER',
+    match = baseMatch(),
+    participants = [participant()],
+    member = myMember,
+  } = options;
 
   useAuthStore.setState({ status: 'authenticated', accessToken: 'token' });
   useGroupStore.setState({ activeGroupId: 'group-1', activeOrganizationId: 'org-1' });
@@ -90,7 +99,7 @@ function renderScreen(
     .mockResolvedValue({
       members: [{ organizationId: 'org-1', userId: me.id, role, status: 'ACTIVE', joinedAt: '' }],
     });
-  jest.spyOn(groupEndpoints, 'listGroupMembers').mockResolvedValue({ members: [myMember] });
+  jest.spyOn(groupEndpoints, 'listGroupMembers').mockResolvedValue({ members: [member] });
   jest.spyOn(matchEndpoints, 'getMatch').mockResolvedValue(match);
   jest.spyOn(matchEndpoints, 'listMatchParticipants').mockResolvedValue({ participants });
 
@@ -142,6 +151,37 @@ describe('MatchDetailsScreen', () => {
     renderScreen({ participants: [] });
 
     expect(await screen.findByText('Você não está na lista deste jogo.')).toBeTruthy();
+  });
+
+  it('offers a join button (not the neutral message) for an active GUEST with no participant record when there is room', async () => {
+    const guestMember: groupEndpoints.GroupMember = { ...myMember, membershipType: 'GUEST' };
+    renderScreen({ member: guestMember, participants: [] });
+
+    expect(await screen.findByRole('button', { name: 'Vou jogar' })).toBeTruthy();
+    expect(screen.queryByText('Você não está na lista deste jogo.')).toBeNull();
+  });
+
+  it('shows "Jogo lotado" with a waitlist join button for an active GUEST when the regular pool is already full', async () => {
+    const guestMember: groupEndpoints.GroupMember = { ...myMember, membershipType: 'GUEST' };
+    const fillers = Array.from({ length: 20 }, (_, i) =>
+      participant({ id: `filler-${i}`, groupMemberId: `member-${i}`, status: 'CONFIRMED' }),
+    );
+    renderScreen({ member: guestMember, participants: fillers });
+
+    expect(await screen.findByText('Jogo lotado')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Entrar na lista de espera' })).toBeTruthy();
+  });
+
+  it('keeps the neutral message (not the join card) for an inactive GUEST with no participant record', async () => {
+    const inactiveGuest: groupEndpoints.GroupMember = {
+      ...myMember,
+      membershipType: 'GUEST',
+      status: 'INACTIVE',
+    };
+    renderScreen({ member: inactiveGuest, participants: [] });
+
+    expect(await screen.findByText('Você não está na lista deste jogo.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Vou jogar' })).toBeNull();
   });
 
   it('hides the admin panel for a plain MEMBER (no match.manage)', async () => {

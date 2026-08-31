@@ -25,6 +25,9 @@ function participant(overrides: Partial<MatchParticipant> = {}): MatchParticipan
     status: 'CONFIRMED',
     confirmedAt: null,
     cancelledAt: null,
+    offeredAt: null,
+    offerExpiresAt: null,
+    queuePosition: null,
     createdAt: '',
     updatedAt: '',
     ...overrides,
@@ -69,6 +72,57 @@ describe('ParticipantsAdminPanel', () => {
   it('shows a placeholder message for an empty section', () => {
     render(<ParticipantsAdminPanel participants={[]} members={[]} currentUserId={undefined} />);
 
-    expect(screen.getAllByText('Ninguém nesta lista.')).toHaveLength(5);
+    expect(screen.getAllByText('Ninguém nesta lista.')).toHaveLength(7);
+    expect(screen.getByText('Nenhuma oferta em aberto.')).toBeTruthy();
+  });
+
+  it('shows the waitlist queues in order, numbered, per pool ("fila; ordem")', () => {
+    const members = [
+      member({ id: 'm1', userId: 'user-1' }),
+      member({ id: 'm2', userId: 'user-2' }),
+      member({ id: 'm3', userId: 'user-3', membershipType: 'GOALKEEPER' }),
+    ];
+    const participants = [
+      participant({ id: 'second', groupMemberId: 'm2', status: 'WAITLISTED', queuePosition: 2 }),
+      participant({ id: 'first', groupMemberId: 'm1', status: 'WAITLISTED', queuePosition: 1 }),
+      participant({
+        id: 'gk-waiting',
+        groupMemberId: 'm3',
+        typeAtMatch: 'GOALKEEPER',
+        status: 'WAITLISTED',
+        queuePosition: 1,
+      }),
+    ];
+
+    render(<ParticipantsAdminPanel participants={participants} members={members} currentUserId={undefined} />);
+
+    expect(screen.getByText('Fila de espera - linha (2)')).toBeTruthy();
+    expect(screen.getByText('Fila de espera - goleiros (1)')).toBeTruthy();
+    expect(screen.getByText(/1\. Jogador user-1/)).toBeTruthy();
+    expect(screen.getByText(/2\. Jogador user-2/)).toBeTruthy();
+  });
+
+  it('shows active offers with a countdown ("ofertas ativas")', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    const members = [member({ id: 'm1', userId: 'user-1' })];
+    const participants = [
+      participant({
+        id: 'offered',
+        groupMemberId: 'm1',
+        status: 'OFFERED',
+        offeredAt: '2026-01-01T00:00:00.000Z',
+        offerExpiresAt: '2026-01-01T00:05:00.000Z',
+      }),
+    ];
+
+    render(<ParticipantsAdminPanel participants={participants} members={members} currentUserId={undefined} />);
+
+    expect(screen.getByText('Ofertas ativas (1)')).toBeTruthy();
+    expect(screen.getByText('Jogador user-1')).toBeTruthy();
+    expect(screen.getByText('5:00')).toBeTruthy();
+
+    jest.useRealTimers();
   });
 });

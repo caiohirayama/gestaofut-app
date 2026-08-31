@@ -2,11 +2,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import * as matchEndpoints from '@/services/api/endpoints/matches';
+import { queryKeys } from '@/services/api/query-keys';
 import {
   useCancelMatchParticipant,
   useConfirmMatchParticipant,
   useDeclineMatchParticipant,
   useMatchParticipants,
+  useRequestGuestParticipation,
 } from './useMatchParticipants';
 
 const GROUP_ID = 'group-1';
@@ -21,6 +23,9 @@ function participant(overrides: Partial<matchEndpoints.MatchParticipant> = {}): 
     status: 'PENDING',
     confirmedAt: null,
     cancelledAt: null,
+    offeredAt: null,
+    offerExpiresAt: null,
+    queuePosition: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -131,4 +136,99 @@ describe('useMatchParticipants cache behavior', () => {
 
     expect(queryClient.getQueryData(otherMatchKey)).toEqual(otherMatchData);
   });
+});
+
+describe('useRequestGuestParticipation', () => {
+  it('appends the server-created participant to an existing cached list', async () => {
+    const { wrapper } = makeWrapper();
+    // Unlike `fakeServer` (built for patching a single existing participant
+    // in place), this mock tracks a growing roster — the background
+    // reconciliation refetch triggered by `invalidateQueries` must also see
+    // the newly created participant, or it would overwrite the optimistic
+    // append with a stale list, exactly as a real backend's list endpoint
+    // would once the new row exists.
+    let serverRoster = [participant({ id: 'existing', status: 'CONFIRMED' })];
+    jest
+      .spyOn(matchEndpoints, 'listMatchParticipants')
+      .mockImplementation(() => Promise.resolve({ participants: serverRoster }));
+    const created = participant({ id: 'new-guest', typeAtMatch: 'GUEST', status: 'WAITLISTED', queuePosition: 1 });
+    jest.spyOn(matchEndpoints, 'requestGuestParticipation').mockImplementation(() => {
+      serverRoster = [...serverRoster, created];
+      return Promise.resolve(created);
+    });
+
+    const { result: listResult } = renderHook(() => useMatchParticipants(GROUP_ID, MATCH_ID), { wrapper });
+    await waitFor(() => expect(listResult.current.data).toHaveLength(1));
+
+    const { result: mutationResult } = renderHook(() => useRequestGuestParticipation(GROUP_ID, MATCH_ID), { wrapper });
+    await act(async () => {
+      await mutationResult.current.mutateAsync();
+    });
+
+    await waitFor(() =>
+      expect(listResult.current.data?.map((p) => p.id).sort()).toEqual(['existing', 'new-guest']),
+    );
+  });
+
+  it('seeds the cache with the new participant when nothing was cached yet', async () => {
+    const { wrapper, queryClient } = makeWrapper();
+    const created = participant({ id: 'solo-guest', typeAtMatch: 'GUEST', status: 'CONFIRMED' });
+    jest.spyOn(matchEndpoints, 'requestGuestParticipation').mockResolvedValue(created);
+
+    const { result: mutationResult } = renderHook(() => useRequestGuestParticipation(GROUP_ID, MATCH_ID), { wrapper });
+    await act(async () => {
+      await mutationResult.current.mutateAsync();
+    });
+
+    expect(queryClient.getQueryData(queryKeys.matches.participants(GROUP_ID, MATCH_ID))).toEqual([created]);
+  });
+
+  it('exposes isPending while the request is in flight, which the UI relies on to disable its button and guard against a double-submit', async () => {
+    const { wrapper } = makeWrapper();
+    jest.spyOn(matchEndpoints, 'listMatchParticipants').mockResolvedValue({ participants: [] });
+    let resolveRequest: (value: matchEndpoints.MatchParticipant) => void = () => {};
+    jest.spyOn(matchEndpoints, 'requestGuestParticipation').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        }),
+    );
+
+    const { result: mutationResult } = renderHook(() => useRequestGuestParticipation(GROUP_ID, MATCH_ID), { wrapper });
+
+    let firstCall: Promise<matchEndpoints.MatchParticipant>;
+    act(() => {
+      firstCall = mutationResult.current.mutateAsync();
+    });
+    await waitFor(() => expect(mutationResult.current.isPending).toBe(true));
+
+    await act(async () => {
+      resolveRequest(participant({ id: 'guest', status: 'WAITLISTED' }));
+      await firstCall;
+    });
+
+    await waitFor(() => expect(mutationResult.current.isPending).toBe(false));
+  });
+});
+
+describe('useMatchParticipants offer-aware polling', () => {
+  it('polls while a participant is OFFERED and stops once none is', async () => {
+    const { wrapper } = makeWrapper();
+    const listSpy = jest.spyOn(matchEndpoints, 'listMatchParticipants').mockResolvedValue({
+      participants: [participant({ status: 'OFFERED', offerExpiresAt: '2026-01-01T00:30:00.000Z' })],
+    });
+
+    const { result } = renderHook(() => useMatchParticipants(GROUP_ID, MATCH_ID), { wrapper });
+    await waitFor(() => expect(result.current.data?.[0]?.status).toBe('OFFERED'));
+
+    const callsWhileOffered = listSpy.mock.calls.length;
+    listSpy.mockResolvedValue({ participants: [participant({ status: 'CONFIRMED' })] });
+    await waitFor(() => expect(listSpy.mock.calls.length).toBeGreaterThan(callsWhileOffered), { timeout: 10000 });
+
+    await waitFor(() => expect(result.current.data?.[0]?.status).toBe('CONFIRMED'));
+    const callsAfterResolved = listSpy.mock.calls.length;
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(listSpy.mock.calls.length).toBe(callsAfterResolved);
+  }, 15000);
 });

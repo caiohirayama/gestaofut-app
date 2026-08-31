@@ -1,12 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 import {
   cancelMatchParticipant,
   confirmMatchParticipant,
   declineMatchParticipant,
   listMatchParticipants,
+  requestGuestParticipation,
   type MatchParticipant,
 } from '@/services/api/endpoints/matches';
 import { queryKeys } from '@/services/api/query-keys';
+
+/** While an offer is live, its countdown must catch a server-side expiration transition without the user having to pull-to-refresh — so poll faster than the default "idle" match data. */
+const OFFER_POLL_INTERVAL_MS = 5000;
 
 export function useMatchParticipants(groupId: string | undefined, matchId: string | undefined) {
   return useQuery({
@@ -14,6 +18,10 @@ export function useMatchParticipants(groupId: string | undefined, matchId: strin
     queryFn: async ({ signal }) =>
       (await listMatchParticipants(groupId!, matchId!, signal)).participants,
     enabled: Boolean(groupId && matchId),
+    refetchInterval: (query: Query<MatchParticipant[]>) =>
+      query.state.data?.some((participant) => participant.status === 'OFFERED')
+        ? OFFER_POLL_INTERVAL_MS
+        : false,
   });
 }
 
@@ -60,5 +68,20 @@ export function useCancelMatchParticipant(groupId: string, matchId: string) {
   return useMutation({
     mutationFn: (participantId: string) => cancelMatchParticipant(groupId, matchId, participantId),
     onSuccess: (participant) => patchParticipant(queryClient, groupId, matchId, participant),
+  });
+}
+
+/** "Entrar na lista de espera" / self-service join for a GUEST with no participant record yet — the server decides CONFIRMED vs WAITLISTED, so the response is appended to the cache rather than patched in place. */
+export function useRequestGuestParticipation(groupId: string, matchId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => requestGuestParticipation(groupId, matchId),
+    onSuccess: (participant) => {
+      const key = queryKeys.matches.participants(groupId, matchId);
+      queryClient.setQueryData<MatchParticipant[]>(key, (current) =>
+        current ? [...current, participant] : [participant],
+      );
+      void queryClient.invalidateQueries({ queryKey: key });
+    },
   });
 }

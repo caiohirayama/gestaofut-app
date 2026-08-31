@@ -58,7 +58,7 @@ o roteador não exigiria tocar nas screens, e testar uma screen não exige
 montar o Router.
 
 Isso já foi seguido ao implementar o módulo de partidas:
-`app/(app)/games.tsx` e `app/match/[matchId].tsx` só importam e renderizam
+`app/(app)/games.tsx` e `app/matches/[matchId].tsx` só importam e renderizam
 `GamesScreen`/`MatchDetailsScreen` de `src/features/matches/screens/` — ver
 [matches.md](matches.md).
 

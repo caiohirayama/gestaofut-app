@@ -9,6 +9,7 @@ import { useGroupStore } from '@/store/group-store';
 import { spacing } from '@/theme';
 import { ConfirmationButtons } from '../components/ConfirmationButtons';
 import { ParticipantsAdminPanel } from '../components/ParticipantsAdminPanel';
+import { RequestParticipationCard } from '../components/RequestParticipationCard';
 import { useMatch } from '../hooks/useMatches';
 import { useMatchParticipants } from '../hooks/useMatchParticipants';
 import { useMyMatchParticipant } from '../hooks/useMyMatchParticipant';
@@ -42,7 +43,7 @@ export function MatchDetailsScreen() {
   const { data: participants } = useMatchParticipants(groupId ?? undefined, matchId);
   const { data: members } = useGroupMembers(groupId ?? undefined);
   const { data: me } = useCurrentUser();
-  const { data: myParticipant } = useMyMatchParticipant(groupId ?? undefined, matchId);
+  const { data: myParticipant, myMember } = useMyMatchParticipant(groupId ?? undefined, matchId);
   const { can } = useActiveGroupPermissions();
   const canManage = can('match.manage');
 
@@ -115,9 +116,16 @@ export function MatchDetailsScreen() {
                   groupId={groupId}
                   matchId={match.id}
                   participant={myParticipant}
+                  participants={participants ?? []}
                 />
               ) : null}
             </View>
+          ) : match.status === 'OPEN' && myMember?.membershipType === 'GUEST' && myMember.status === 'ACTIVE' ? (
+            <RequestParticipationCard
+              groupId={groupId}
+              matchId={match.id}
+              isFull={regularSummary.capacity !== null && regularSummary.confirmed >= regularSummary.capacity}
+            />
           ) : (
             <Text variant="body" color="textSecondary">
               Você não está na lista deste jogo.

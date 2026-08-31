@@ -14,21 +14,24 @@ src/features/matches/
     match-lists.ts          upcoming/history/pickNextMatch — puro, sem I/O
     match-datetime.ts       "QUARTA · 19:15", data, hora — puro
     match-labels.ts         labels/variantes de Badge para os enums de status
-    participant-summary.ts  contagem confirmados/capacidade, roster do admin
+    participant-summary.ts  contagem confirmados/capacidade, fila ordenada, ofertas ativas, roster do admin
     match-error-message.ts  mensagem amigável para o 409 de "sem vaga"
   hooks/
     useMatches.ts            lista (sem filtro) + detalhe
     useNextMatch.ts          deriva o jogo em destaque de useMatches
-    useMatchParticipants.ts  lista de participantes + confirm/decline/cancel
-    useMyMatchParticipant.ts deriva "minha" participação (groupMemberId → userId → me)
+    useMatchParticipants.ts  lista de participantes + confirm/decline/cancel/request, com polling mais rápido durante uma oferta ativa
+    useMyMatchParticipant.ts deriva "minha" participação (groupMemberId → userId → me) + "meu" GroupMember
+    useCountdown.ts          deriva {remainingMs, formatted, isExpired} de um instante ISO, nunca guarda o valor como estado próprio
   components/
-    NextMatchCard.tsx           card de destaque da Home
-    ConfirmationButtons.tsx     "Vou jogar" / "Não vou" — o núcleo da feature
-    MatchListRow.tsx            linha da lista de jogos
-    ParticipantsAdminPanel.tsx  roster para quem tem match.manage
+    NextMatchCard.tsx              card de destaque da Home
+    ConfirmationButtons.tsx        "Vou jogar" / "Não vou" / fila / oferta — o núcleo da feature
+    RequestParticipationCard.tsx   "Entrar no jogo" self-service para avulsos (GUEST) sem registro ainda
+    MatchListRow.tsx               linha da lista de jogos
+    ParticipantsAdminPanel.tsx     roster + fila + ofertas ativas para quem tem match.manage
   screens/
     GamesScreen.tsx          tab "Jogos": próximos + histórico
     MatchDetailsScreen.tsx   detalhe completo + confirmação + admin
+app/matches/[matchId].tsx   rota (também o alvo de um deep link /matches/{matchId} — ver "Deep link")
 ```
 
 ## Por que não há paginação nem filtro de servidor nas listas
@@ -57,17 +60,44 @@ o racional equivalente em `gestaofut-api docs/matches.md`).
 `NextMatchCard` (`src/features/matches/components/NextMatchCard.tsx`)
 mostra weekday/hora, o nome do grupo (`useGroup`), o local (se houver) e:
 
-- Se o jogo está `OPEN`: a contagem `confirmados / regularCapacity` (ou só
-  a contagem, se a capacidade for `null` = sem limite) e, se o usuário já
-  tem um registro de participação, os botões de confirmação.
+- Se o jogo está `OPEN` e o usuário já tem um registro de participação: a
+  contagem `confirmados / regularCapacity` e `ConfirmationButtons`.
+- Se o jogo está `OPEN`, o usuário **não** tem registro, e é um avulso
+  (`membershipType === 'GUEST'`) ativo: `RequestParticipationCard` — ver
+  "Entrar em um jogo (avulso)" abaixo.
 - Caso contrário: um `Badge` com o status do jogo (ex.: "Agendado"), sem
   botões — não existe `MatchParticipant` para confirmar antes do jogo ser
-  aberto.
+  aberto, ou o usuário não tem como entrar por conta própria.
 
 Um link "Ver detalhes" leva para `MatchDetailsScreen` — a única navegação
 extra, e opcional (a confirmação em si acontece ali mesmo, no card).
 
-## Confirmar / recusar / cancelar
+## Entrar em um jogo (avulso) — "REGRA"
+
+Um `GroupMember` do tipo `GUEST` sem `MatchParticipant` ainda neste jogo
+pode solicitar participação por conta própria — `requestGuestParticipation`
+(`POST .../participants/request`, ver `gestaofut-api docs/matches.md`,
+"REGRA"). **Quem decide `CONFIRMED` vs. `WAITLISTED` é sempre o servidor**;
+o cliente nunca faz essa conta para autorizar a ação, só para escolher o
+texto/label mostrado antes de clicar:
+
+- **Há vaga**: botão "Vou jogar" (mesmo rótulo do fluxo normal — a
+  experiência de quem entra direto é idêntica a quem já tinha um registro).
+- **Jogo lotado** ("JOGO LOTADO"): mostra o texto "Jogo lotado" e o botão
+  vira "Entrar na lista de espera" — pressionar ainda chama o mesmo
+  endpoint; o servidor resolve para `WAITLISTED`.
+
+`RequestParticipationCard` recebe esse `isFull` como uma prop booleana
+simples (comparação client-side de `confirmados >= capacidade`, a mesma
+lógica de `summarizeRegularCapacity`) — é só uma dica de UI, não uma
+autorização; o 409 de concorrência real (a vaga sumiu entre o clique e a
+resposta) já cai na mesma `getMatchParticipantErrorMessage` usada em
+`ConfirmationButtons`. A mutation (`useRequestGuestParticipation`) segue o
+mesmo padrão de cache das demais: ao suceder, adiciona a resposta do
+servidor à lista já cacheada (`setQueryData`) em vez de só invalidar, e o
+double-submit é prevenido desabilitando o botão enquanto `isPending`.
+
+## Confirmar / recusar / cancelar / fila / oferta
 
 `ConfirmationButtons` (usado tanto no card da Home quanto em
 `MatchDetailsScreen` — um único componente, sem duplicar a lógica) decide o
@@ -75,20 +105,60 @@ que renderizar a partir do `status` atual do `MatchParticipant`, porque a
 API só aceita transições específicas (mirror de
 `ALLOWED_SOURCE_STATUSES` do `gestaofut-api`):
 
-| Status atual                                      | O que aparece                               | Ação do botão "negativo" |
-| ------------------------------------------------- | ------------------------------------------- | ------------------------ |
-| `PENDING` / `OFFERED` / `WAITLISTED`              | "Vou jogar" + "Não vou"                     | `decline`                |
-| `CONFIRMED`                                       | Selo "Presença confirmada" + "Não vou mais" | `cancel`                 |
-| `DECLINED` / `CANCELLED` / `ATTENDED` / `NO_SHOW` | Texto informativo, sem botão                | —                        |
+| Status atual                                      | O que aparece                                                                    | Ação do botão "negativo" |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------- |
+| `PENDING`                                          | "Vou jogar" + "Não vou"                                                          | `decline`                 |
+| `WAITLISTED` ("NA FILA")                           | "Você está na lista de espera." + "Posição aproximada: N" + "Sair da fila"       | `decline`                 |
+| `OFERECIDO` (`OFFERED`, "OFERTA")                  | Banner de alta prioridade com contador + "ACEITAR VAGA" (`confirm`) / "RECUSAR"  | `decline`                 |
+| `CONFIRMED`                                        | Selo "Presença confirmada" + "Não vou mais"                                      | `cancel`                  |
+| `DECLINED` / `CANCELLED` / `ATTENDED` / `NO_SHOW`  | Texto informativo, sem botão                                                     | —                          |
 
-O segundo botão nunca é sempre "decline": a partir de `CONFIRMED`, a API só
-aceita a transição para `CANCELLED` (chamar `decline` ali devolveria 409) —
-por isso o componente escolhe a mutation certa (`cancel` vs. `decline`)
-com base no status atual, não um botão genérico "desfazer". A partir de
-`DECLINED`/`CANCELLED` não há caminho de volta nessa API; mostrar um botão
-que se sabe que vai falhar contrariaria o padrão já estabelecido em
+**Importante — `WAITLISTED` não confirma mais diretamente.** Desde que o
+`gestaofut-api` passou a oferecer vagas explicitamente (`OFFERED`) em vez de
+deixar qualquer um da fila confirmar por conta própria, `ALLOWED_SOURCE_STATUSES.CONFIRMED`
+não inclui mais `WAITLISTED` — chamar `confirm` a partir dali agora
+responde `409`. Por isso `WAITLISTED` só mostra "Sair da fila" (`decline`);
+não existe mais um botão "Vou jogar" nesse estado. A "posição aproximada" é
+`computeQueueRank` (`participant-summary.ts`): a posição de `participant`
+entre os que **ainda estão** `WAITLISTED` no mesmo pool — não o
+`queuePosition` bruto (que nunca é recompactado no backend e pode ter
+buracos de gente que já saiu da fila).
+
+**"OFERTA"**: um `OFFERED` é uma vaga reservada para essa pessoa até
+`offerExpiresAt`. O banner ("⚽ Uma vaga abriu para você.") usa
+`useCountdown(participant.offerExpiresAt)` para o texto "Você tem MM:SS
+para confirmar." — o hook **recalcula a cada tick a partir do próprio
+`offerExpiresAt`** (`Date.now()` vs. o instante alvo), nunca guardando o
+tempo restante como um estado próprio que pudesse dessincronizar do
+servidor; é o mesmo princípio do backend ("Postgres é source of truth",
+ver `gestaofut-api docs/security.md`) aplicado à UI. Quando o contador
+chega a zero, o botão "ACEITAR VAGA" fica desabilitado — o clique real
+ainda seria rejeitado pelo servidor se a oferta já tivesse sido processada
+pelo worker, mas a UI não espera esse round-trip para deixar de convidar a
+uma ação que provavelmente vai falhar.
+
+O segundo botão nunca é sempre "decline" no sentido de mutation: a partir
+de `CONFIRMED`, a API só aceita a transição para `CANCELLED` (chamar
+`decline` ali devolveria 409) — por isso o componente escolhe a mutation
+certa (`cancel` vs. `decline`) com base no status atual, não um botão
+genérico "desfazer". A partir de `DECLINED`/`CANCELLED` não há caminho de
+volta nessa API; mostrar um botão que se sabe que vai falhar contrariaria o
+padrão já estabelecido em
 [state-management.md](state-management.md#autorização-continua-no-backend) —
 por isso vira texto informativo.
+
+### Polling mais rápido durante uma oferta ativa
+
+`useMatchParticipants` usa um `refetchInterval` baseado em função (TanStack
+Query v5): enquanto **qualquer** participante da lista em cache está
+`OFFERED`, refaz a busca a cada 5s; caso contrário, não faz polling algum
+(`false`). Isso existe porque uma oferta pode expirar **no servidor**
+(processada pelo worker BullMQ do `gestaofut-api`, ver o `docs/matches.md`
+de lá) sem que o dono da tela tenha feito nada — sem esse polling, o
+contador chegaria a zero na UI e ficaria parado ali, sem nunca refletir a
+transição real para `WAITLISTED` (ou para o próximo `OFFERED`, se essa
+pessoa foi promovida). O polling para sozinho assim que nenhum participante
+em cache está mais `OFFERED`.
 
 ### Double submit e feedback
 
@@ -96,7 +166,9 @@ por isso vira texto informativo.
   decline, cancel) — os dois botões visíveis ficam desabilitados enquanto
   **qualquer um** dos três estiver em andamento, não só o que foi
   pressionado. Isso cobre tanto o duplo-toque no mesmo botão quanto tocar
-  no outro botão enquanto o primeiro ainda está em voo.
+  no outro botão enquanto o primeiro ainda está em voo. O mesmo padrão vale
+  para `RequestParticipationCard` (um único botão, desabilitado enquanto
+  `isPending`).
 - **Feedback**: o botão pressionado mostra um spinner (`Button` já cobre
   isso via `loading`); em caso de erro, uma linha vermelha aparece com
   `getMatchParticipantErrorMessage(error)` — que trata especificamente um
@@ -109,7 +181,9 @@ por isso vira texto informativo.
   um refetch) e dispara um `invalidateQueries` de reconciliação em
   paralelo — ver [state-management.md](state-management.md) para o
   racional completo. Isso é o que faz o status mudar na tela assim que a
-  resposta chega, sem esperar um segundo round-trip.
+  resposta chega, sem esperar um segundo round-trip. `useRequestGuestParticipation`
+  segue o mesmo racional, mas *anexa* o novo participante em vez de
+  substituir um existente.
 
 ## Jogos (lista + histórico)
 
@@ -117,8 +191,23 @@ por isso vira texto informativo.
 "Próximos"/"Histórico", ambos derivados client-side da mesma busca sem
 filtro (ver acima). Cada linha (`MatchListRow`, memoizada) mostra
 weekday/hora, local (se houver) e um `Badge` de status; tocar navega para
-`MatchDetailsScreen` via `router.push({ pathname: '/match/[matchId]', params: { matchId } })`
+`MatchDetailsScreen` via `router.push({ pathname: '/matches/[matchId]', params: { matchId } })`
 — a mesma rota dinâmica acessada pelo "Ver detalhes" do card da Home.
+
+## Deep link
+
+A rota vive em `app/matches/[matchId].tsx` (renomeada de `app/match/` —
+antes do fluxo de fila/oferta não havia motivo para um contrato de URL
+estável; agora sim, porque uma notificação push precisa apontar para um
+jogo específico). Com o `"scheme": "gestaofut"` já configurado em
+`app.json`, o Expo Router resolve automaticamente
+`gestaofut://matches/{matchId}` para essa mesma tela — nenhuma configuração
+adicional de linking foi necessária. Hoje nada dispara esse deep link
+(não há push notification implementada ainda); a rota só precisa **existir
+e funcionar** de forma que, quando uma notificação futura ("uma vaga abriu
+para você") for implementada, apontar para `/matches/{matchId}` já leve
+direto para `MatchDetailsScreen`, com `ConfirmationButtons` mostrando o
+banner de oferta se for o caso.
 
 ## Detalhes do jogo
 
@@ -132,26 +221,29 @@ weekday/hora, local (se houver) e um `Badge` de status; tocar navega para
 - **Sua participação**: o `Badge` do próprio status + `ConfirmationButtons`
   (só quando o jogo está `OPEN` — fora disso, mudar de ideia não é mais
   possível pela API). Se o usuário não tiver um `MatchParticipant` nesse
-  jogo (ex.: avulso nunca inscrito automaticamente, ou jogo ainda não
-  aberto), mostra uma mensagem neutra em vez de esconder a seção
-  silenciosamente.
+  jogo: mostra `RequestParticipationCard` quando é um avulso ativo elegível
+  (mesma regra do card da Home), senão mostra uma mensagem neutra em vez de
+  esconder a seção silenciosamente.
 - **Administração** (só com `match.manage`): `ParticipantsAdminPanel`.
 
-## Painel do administrador
+## Painel do administrador ("ADMIN": fila; ordem; ofertas ativas)
 
 Visível só com `match.manage` (o mesmo espelho de permissions de
 [multi-tenancy.md](multi-tenancy.md) — o backend responde 403 numa
 tentativa de escrita sem essa permission, independentemente do que a UI
 mostrar). `buildAdminRoster` (pura, testada isoladamente) separa os
-participantes em cinco grupos, batendo com o pedido original:
+participantes em oito seções:
 
-| Seção       | Regra                                                                                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Confirmados | `typeAtMatch=REGULAR`, `status=CONFIRMED`                                                                                                                                                                  |
-| Pendentes   | `typeAtMatch=REGULAR`, `status` em `PENDING`/`WAITLISTED`/`OFFERED`                                                                                                                                        |
-| Ausentes    | `typeAtMatch=REGULAR`, `status` em `DECLINED`/`CANCELLED`                                                                                                                                                  |
-| Goleiros    | `typeAtMatch=GOALKEEPER`, qualquer status (mostrado com o próprio `Badge` de status — goleiro tem capacidade independente, então "confirmado"/"pendente" precisa aparecer por pessoa, não só por contagem) |
-| Avulsos     | `typeAtMatch=GUEST`, qualquer status (hoje tende a vir vazio — a API não inscreve avulsos automaticamente ao abrir um jogo; a seção existe e funciona assim que essa inscrição existir)                    |
+| Seção                        | Regra                                                                                                                                                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Confirmados                  | `typeAtMatch=REGULAR`, `status=CONFIRMED`                                                                                                                                                                  |
+| Pendentes                    | `typeAtMatch=REGULAR`, `status=PENDING` (estritamente — `WAITLISTED`/`OFFERED` agora têm seções dedicadas abaixo)                                                                                          |
+| Ausentes                     | `typeAtMatch=REGULAR`, `status` em `DECLINED`/`CANCELLED`                                                                                                                                                  |
+| Goleiros                     | `typeAtMatch=GOALKEEPER`, qualquer status (mostrado com o próprio `Badge` de status — goleiro tem capacidade independente, então "confirmado"/"pendente" precisa aparecer por pessoa, não só por contagem) |
+| Avulsos                      | `typeAtMatch=GUEST`, qualquer status                                                                                                                                                                       |
+| Fila de espera - linha       | `orderedWaitlist(participants, 'REGULAR')` — `REGULAR` + `GUEST`, `status=WAITLISTED`, numerada na ordem real (`queuePosition`, com `createdAt` como desempate)                                            |
+| Fila de espera - goleiros    | O mesmo, restrito ao pool `GOALKEEPER`                                                                                                                                                                     |
+| Ofertas ativas               | Todo `status=OFFERED`, ordenado por `offerExpiresAt` ascendente (quem vai expirar primeiro aparece primeiro); cada linha mostra um contador ao vivo via `useCountdown` — mesmo hook do banner do jogador  |
 
 Como `MatchParticipant` só carrega `groupMemberId` (nunca nome/e-mail —
 mesma limitação de contrato já documentada em
@@ -159,13 +251,22 @@ mesma limitação de contrato já documentada em
 `displayNameForMember` (reaproveitado da feature `groups`), cruzando
 `groupMemberId → userId` com `useGroupMembers`.
 
+`POOL_TYPES`/`poolForType` em `participant-summary.ts` espelham o mesmo
+conceito do backend (`gestaofut-api`'s `POOL_TYPES`): `GUEST` compartilha o
+pool `REGULAR` (ocupa a mesma vaga de linha que um mensalista ocuparia),
+`GOALKEEPER` é seu próprio pool — é a base de `orderedWaitlist`,
+`computeQueueRank` e da contagem de "jogo lotado" usada por
+`RequestParticipationCard`.
+
+O painel **não** oferece hoje as ações administrativas excepcionais que a
+API já expõe (remover/adicionar/reordenar a fila manualmente, ver
+`gestaofut-api docs/matches.md`, "ADMIN") — é só leitura por enquanto; a
+seção existe para o pedido atual ("mostrar fila, ordem, ofertas ativas"),
+não para editá-las.
+
 ## Limitações conhecidas do contrato atual
 
 - **Sem paginação** em `GET /matches` (ver acima).
-- **Sem inscrição de avulso a um jogo específico** — a seção "Avulsos" do
-  admin existe, mas hoje só populada por uma futura ação administrativa que
-  ainda não existe na API.
-- **Sem cascata de `WAITLISTED → OFFERED`** — a API não promove
-  automaticamente quem está na lista de espera quando uma vaga abre;
-  `OFFERED` é um status válido de exibição, mas nada nesta versão do
-  backend o produz.
+- **Sem edição da fila pelo admin no cliente** — a API já permite
+  remover/adicionar/reordenar manualmente (ver acima), mas a UI ainda só
+  lê essas informações.

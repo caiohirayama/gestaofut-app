@@ -82,7 +82,7 @@ describe('GamesScreen', () => {
     fireEvent.press(row);
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/match/[matchId]',
+      pathname: '/matches/[matchId]',
       params: { matchId: 'match-42' },
     });
   });

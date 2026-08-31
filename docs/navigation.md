@@ -26,7 +26,7 @@ app/
   switch-group.tsx    SwitchGroupScreen — idem
   add-player.tsx      AddPlayerScreen — idem
   player/[memberId].tsx  PlayerDetailScreen — idem, primeira rota dinâmica do app
-  match/[matchId].tsx    MatchDetailsScreen — idem, mesmo padrão de rota dinâmica
+  matches/[matchId].tsx  MatchDetailsScreen — idem, mesmo padrão de rota dinâmica
 ```
 
 ## Como a sessão decide o grupo
@@ -80,7 +80,7 @@ reais.
 ## Telas fora das tabs
 
 `app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx`,
-`app/player/[memberId].tsx` e `app/match/[matchId].tsx` ficam soltas na
+`app/player/[memberId].tsx` e `app/matches/[matchId].tsx` ficam soltas na
 raiz de `app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`), não dentro de
 `(app)/`: uma tela alcançada por `router.push` a partir de dentro de uma
 tab (ex.: "Adicionar jogador", tocar numa linha da lista de jogadores, ou
@@ -90,10 +90,15 @@ padrão recomendado do Expo Router para uma tela "de detalhe" que empilha
 por cima da barra de tabs em vez de substituí-la.
 
 `player/[memberId].tsx` foi a primeira rota dinâmica do app;
-`match/[matchId].tsx` segue o mesmo padrão — navegada via
-`router.push({ pathname: '/match/[matchId]', params: { matchId } })` a
+`matches/[matchId].tsx` segue o mesmo padrão — navegada via
+`router.push({ pathname: '/matches/[matchId]', params: { matchId } })` a
 partir de uma linha da `GamesScreen` ou do "Ver detalhes" do card de
-destaque da Home (ver [matches.md](matches.md)).
+destaque da Home (ver [matches.md](matches.md)). O nome da pasta é
+plural (`matches/`, não `match/`) de propósito: é o mesmo caminho que uma
+futura push notification vai abrir via deep link
+(`gestaofut://matches/{matchId}`, resolvido automaticamente pelo
+`"scheme": "gestaofut"` do `app.json` — ver [matches.md](matches.md),
+"Deep link").
 
 ## Adicionando uma rota nova
 

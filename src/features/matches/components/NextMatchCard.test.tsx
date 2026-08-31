@@ -56,6 +56,9 @@ function participant(
     status: 'PENDING',
     confirmedAt: null,
     cancelledAt: null,
+    offeredAt: null,
+    offerExpiresAt: null,
+    queuePosition: null,
     createdAt: '',
     updatedAt: '',
     ...overrides,
@@ -153,5 +156,16 @@ describe('NextMatchCard', () => {
 
     await screen.findByText('Churras FC');
     expect(screen.queryByRole('button', { name: 'Vou jogar' })).toBeNull();
+  });
+
+  it('offers a join button for an active GUEST with no participant record yet on an OPEN match', async () => {
+    const guestMember: groupEndpoints.GroupMember = { ...myMember, membershipType: 'GUEST' };
+    jest.spyOn(groupEndpoints, 'listGroupMembers').mockResolvedValue({ members: [guestMember] });
+    jest.spyOn(matchEndpoints, 'listMatches').mockResolvedValue({ matches: [match()] });
+    jest.spyOn(matchEndpoints, 'listMatchParticipants').mockResolvedValue({ participants: [] });
+
+    renderCard();
+
+    expect(await screen.findByRole('button', { name: 'Vou jogar' })).toBeTruthy();
   });
 });

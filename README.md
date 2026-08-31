@@ -7,10 +7,12 @@ esportivos recorrentes. Já implementados: autenticação real contra o
 (seleção e criação de grupo, configurações básicas, membros, tabs
 dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md))
 e jogos (próximo jogo em destaque na Home, lista/histórico, detalhes,
-confirmação de presença e painel administrativo — ver
-[docs/matches.md](docs/matches.md)). Financeiro, eventos e notificações
-ainda não existem. Veja [docs/architecture.md](docs/architecture.md) para
-o que vem a seguir.
+confirmação de presença, entrada self-service de avulsos com fila de
+espera e ofertas de vaga com contador, e painel administrativo com fila/
+ordem/ofertas ativas — ver [docs/matches.md](docs/matches.md)). Financeiro,
+eventos e notificações push ainda não existem, mas a rota
+`/matches/{matchId}` já está preparada como alvo de um deep link futuro.
+Veja [docs/architecture.md](docs/architecture.md) para o que vem a seguir.
 
 ## Stack
 

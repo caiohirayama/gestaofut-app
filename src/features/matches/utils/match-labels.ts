@@ -41,9 +41,11 @@ export const PARTICIPANT_STATUS_BADGE_VARIANT: Record<ParticipantStatus, BadgeVa
   NO_SHOW: 'danger',
 };
 
-/** Statuses from which the player can still act (confirm or decline) — mirrors gestaofut-api's `ALLOWED_SOURCE_STATUSES`. */
-export const PARTICIPANT_ACTIONABLE_STATUSES: readonly ParticipantStatus[] = [
-  'PENDING',
-  'OFFERED',
-  'WAITLISTED',
-];
+/**
+ * Statuses from which the player can confirm ("Vou jogar") or decline
+ * ("Não vou") — mirrors gestaofut-api's `ALLOWED_SOURCE_STATUSES.CONFIRMED`.
+ * `WAITLISTED` is deliberately excluded: since the OFERTA/fila rework, a
+ * queued player can only leave the queue (decline), never confirm directly
+ * — confirming from `WAITLISTED` is rejected with 409 by the API.
+ */
+export const PARTICIPANT_CONFIRMABLE_STATUSES: readonly ParticipantStatus[] = ['PENDING', 'OFFERED'];
