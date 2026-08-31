@@ -1,5 +1,6 @@
 import { ActivityIndicator, View } from 'react-native';
 import { Badge, Card, Screen, Text } from '@/components/ui';
+import { NextEventCard } from '@/features/events/components/NextEventCard';
 import { NextMatchCard } from '@/features/matches/components/NextMatchCard';
 import { useGroupStore } from '@/store/group-store';
 import { spacing } from '@/theme';
@@ -27,6 +28,12 @@ export function HomeScreen() {
       {groupId ? (
         <View style={{ marginBottom: spacing.xl }}>
           <NextMatchCard groupId={groupId} />
+        </View>
+      ) : null}
+
+      {groupId ? (
+        <View style={{ marginBottom: spacing.xl }}>
+          <NextEventCard groupId={groupId} />
         </View>
       ) : null}
 

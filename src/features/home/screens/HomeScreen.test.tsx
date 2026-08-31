@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react-native';
 import * as authEndpoints from '@/services/api/endpoints/auth';
+import * as eventEndpoints from '@/services/api/endpoints/events';
 import * as groupEndpoints from '@/services/api/endpoints/groups';
 import * as matchEndpoints from '@/services/api/endpoints/matches';
 import * as systemEndpoints from '@/services/api/endpoints/system';
@@ -36,6 +37,7 @@ function renderScreen() {
   });
   jest.spyOn(groupEndpoints, 'listGroupMembers').mockResolvedValue({ members: [] });
   jest.spyOn(matchEndpoints, 'listMatches').mockResolvedValue({ matches: [] });
+  jest.spyOn(eventEndpoints, 'listEvents').mockResolvedValue({ events: [] });
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

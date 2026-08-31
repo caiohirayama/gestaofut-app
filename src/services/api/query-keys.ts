@@ -36,4 +36,12 @@ export const queryKeys = {
     payments: (groupId: string) => ['groups', groupId, 'finance', 'payments'] as const,
     myPayments: (groupId: string) => ['groups', groupId, 'finance', 'payments', 'me'] as const,
   },
+  events: {
+    list: (groupId: string) => ['groups', groupId, 'events'] as const,
+    detail: (groupId: string, eventId: string) => ['groups', groupId, 'events', eventId] as const,
+    participants: (groupId: string, eventId: string) =>
+      ['groups', groupId, 'events', eventId, 'participants'] as const,
+    myEntitlement: (groupId: string, eventId: string) =>
+      ['groups', groupId, 'events', eventId, 'entitlements', 'me'] as const,
+  },
 } as const;

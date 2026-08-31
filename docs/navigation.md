@@ -20,7 +20,7 @@ app/
     games.tsx      Jogos (GamesScreen)
     players.tsx    Jogadores (MembersScreen)
     finance.tsx    Financeiro (FinanceScreen — dashboard + pendências, ver docs/finance.md)
-    more.tsx       Mais (grupo ativo, meu financeiro, trocar grupo, configurações, "Sair")
+    more.tsx       Mais (grupo ativo, eventos, meu financeiro, trocar grupo, configurações, "Sair")
   group-settings.tsx  GroupSettingsScreen — fora de (app), empilhada por
                       cima das tabs (ver "Telas fora das tabs" abaixo)
   switch-group.tsx    SwitchGroupScreen — idem
@@ -28,6 +28,10 @@ app/
   my-finance.tsx      MyFinanceScreen — idem (ver docs/finance.md)
   player/[memberId].tsx  PlayerDetailScreen — idem, primeira rota dinâmica do app
   matches/[matchId].tsx  MatchDetailsScreen — idem, mesmo padrão de rota dinâmica
+  events/index.tsx        EventsListScreen — idem, alcançada pelo botão "Eventos" em MoreScreen (ver docs/events.md)
+  events/[eventId].tsx    EventDetailScreen — idem, mesmo padrão de rota dinâmica
+  events/create.tsx       EventFormScreen (modo criação) — idem
+  events/[eventId]/edit.tsx  EventFormScreen (modo edição) — idem
 ```
 
 ## Como a sessão decide o grupo
@@ -80,18 +84,21 @@ já têm telas reais.
 ## Telas fora das tabs
 
 `app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx`,
-`app/my-finance.tsx`, `app/player/[memberId].tsx` e
-`app/matches/[matchId].tsx` ficam soltas na raiz de `app/` (irmãs de
-`(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`: uma tela
-alcançada por `router.push` a partir de dentro de uma tab (ex.: "Adicionar
-jogador", tocar numa linha da lista de jogadores, ou tocar no card de
-destaque/numa linha da lista de jogos) precisa estar registrada no
+`app/my-finance.tsx`, `app/player/[memberId].tsx`,
+`app/matches/[matchId].tsx` e `app/events/**` ficam soltas na raiz de
+`app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`:
+uma tela alcançada por `router.push` a partir de dentro de uma tab (ex.:
+"Adicionar jogador", tocar numa linha da lista de jogadores, ou tocar no
+card de destaque/numa linha da lista de jogos) precisa estar registrada no
 `<Stack>` raiz, não na lista fixa de `<Tabs.Screen>` — é o padrão
 recomendado do Expo Router para uma tela "de detalhe" que empilha por cima
-da barra de tabs em vez de substituí-la. `my-finance.tsx` segue essa mesma
-regra mesmo não tendo uma linha/card específico que leve até ela — é
-alcançada pelo botão "Meu financeiro" em `MoreScreen`, mas continua sendo
-uma tela de detalhe empilhada, não uma tab (ver [finance.md](finance.md)).
+da barra de tabs em vez de substituí-la. `my-finance.tsx` e `events/index.tsx`
+seguem essa mesma regra mesmo não tendo uma linha/card específico que leve
+até elas — são alcançadas por botões em `MoreScreen` ("Meu financeiro" /
+"Eventos"), mas continuam sendo telas empilhadas, não tabs (ver
+[finance.md](finance.md) e [events.md](events.md)). Eventos deliberadamente
+**não** virou uma 6ª tab (diferente de Financeiro, pedido explicitamente
+como tab) — ver [events.md](events.md), "Por que não há uma 6ª aba".
 
 `player/[memberId].tsx` foi a primeira rota dinâmica do app;
 `matches/[matchId].tsx` segue o mesmo padrão — navegada via
@@ -103,6 +110,12 @@ futura push notification vai abrir via deep link
 (`gestaofut://matches/{matchId}`, resolvido automaticamente pelo
 `"scheme": "gestaofut"` do `app.json` — ver [matches.md](matches.md),
 "Deep link").
+
+`events/[eventId].tsx` (detalhe) e `events/[eventId]/edit.tsx` (edição)
+coexistem sob o mesmo segmento dinâmico — a primeira vez que este app usa
+um arquivo dinâmico (`[eventId].tsx`) e uma pasta com o mesmo nome dinâmico
+(`[eventId]/`) lado a lado; o Expo Router resolve isso sem ambiguidade
+porque `/events/{id}` bate no arquivo e `/events/{id}/edit` bate na pasta.
 
 ## Adicionando uma rota nova
 

@@ -9,14 +9,18 @@ dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md)
 jogos (próximo jogo em destaque na Home, lista/histórico, detalhes,
 confirmação de presença, entrada self-service de avulsos com fila de
 espera e ofertas de vaga com contador, e painel administrativo com fila/
-ordem/ofertas ativas — ver [docs/matches.md](docs/matches.md)) e financeiro
+ordem/ofertas ativas — ver [docs/matches.md](docs/matches.md)), financeiro
 (dashboard mensal e lista de pendências para `finance.read`/`finance.manage`,
 pagamento manual com confirmação, e "Meu financeiro" — mensalidade/avulsos/
 pagamentos/pendências somente do próprio usuário — ver
-[docs/finance.md](docs/finance.md)). Eventos e notificações push ainda não
-existem, mas a rota `/matches/{matchId}` já está preparada como alvo de um
-deep link futuro. Veja [docs/architecture.md](docs/architecture.md) para o
-que vem a seguir.
+[docs/finance.md](docs/finance.md)) e eventos (churrasco e outros tipos
+genéricos — evento em destaque na Home, lista/histórico, confirmação de
+presença, "Incluso na mensalidade" para quem tem direito ao benefício, e
+administração completa — criar/editar/avançar status/cancelar/visualizar
+participantes — ver [docs/events.md](docs/events.md)). Notificações push
+ainda não existem, mas a rota `/matches/{matchId}` já está preparada como
+alvo de um deep link futuro. Veja [docs/architecture.md](docs/architecture.md)
+para o que vem a seguir.
 
 ## Stack
 
@@ -78,4 +82,5 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 - [docs/api-client.md](docs/api-client.md) — cliente HTTP, erros, query keys, refresh automático
 - [docs/matches.md](docs/matches.md) — jogos, confirmação de presença, fila/oferta, admin
 - [docs/finance.md](docs/finance.md) — mensalidades, cobranças avulsas, pagamentos, pendências
+- [docs/events.md](docs/events.md) — eventos genéricos (churrasco e outros), confirmação, entitlement, admin
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature

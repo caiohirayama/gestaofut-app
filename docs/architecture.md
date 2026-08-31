@@ -135,14 +135,35 @@ Detalhada em [finance.md](finance.md); do ponto de vista arquitetural:
   (os totais do dashboard); `matches`/`groups` só armazenavam e exibiam
   esses valores como texto, nunca os somavam.
 
+## Feature `events` (eventos genéricos, incl. churrasco)
+
+Quarta feature de produto real. Detalhada em [events.md](events.md); do
+ponto de vista arquitetural:
+
+- **Mesmo racional de dependência cruzada** de `matches`/`finance` —
+  depende de `useGroupMembers`/`useCurrentUser` para "quem sou eu" e
+  `displayNameForMember` para o roster administrativo.
+- **`EventConfirmationButtons` é uma versão deliberadamente mais simples de
+  `ConfirmationButtons`** — o domínio `EventParticipant` não tem fila nem
+  oferta, então o componente cobre só três status em vez dos seis de
+  `matches`, em vez de reaproveitar o componente mais complexo com props
+  para desligar os estados que não existem aqui.
+- **Primeira rota com um segmento dinâmico usado tanto como arquivo quanto
+  como pasta** (`app/events/[eventId].tsx` + `app/events/[eventId]/edit.tsx`)
+  — ver [navigation.md](navigation.md).
+- **Não virou uma 6ª tab** — diferente de `finance` (pedido explicitamente
+  como tab), `events` vive como uma entrada em `MoreScreen` + um card
+  opcional na Home, já que o caso de uso mais frequente (ver o próximo
+  evento e confirmar) cabe inteiro no card — ver [events.md](events.md).
+
 ## Por que este é um bom ponto de partida
 
 - Cada peça (design system, cliente HTTP, store, navegação) é testável
   isoladamente.
 - Adicionar uma feature real significa criar uma pasta em
   `src/features/<nome>/` e registrar suas rotas — não exige mudar nada da
-  fundação, como `groups`, `matches` e `finance` (ver
-  [finance.md](finance.md)) já demonstraram.
+  fundação, como `groups`, `matches`, `finance` e `events` (ver
+  [finance.md](finance.md) e [events.md](events.md)) já demonstraram.
 - Nenhuma decisão aqui pressupõe como o backend de negócio vai se parecer
   além do contrato já validado (`/health`, `/api/v1`, auth, organizations/
   groups).
