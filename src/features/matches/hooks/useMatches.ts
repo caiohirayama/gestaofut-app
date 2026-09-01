@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { getMatch, listMatches } from '@/services/api/endpoints/matches';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createMatch, getMatch, listMatches, openMatch, type CreateMatchInput, type Match } from '@/services/api/endpoints/matches';
 import { queryKeys } from '@/services/api/query-keys';
 
 /**
@@ -23,5 +23,28 @@ export function useMatch(groupId: string | undefined, matchId: string | undefine
     queryKey: queryKeys.matches.detail(groupId ?? '', matchId ?? ''),
     queryFn: ({ signal }) => getMatch(groupId!, matchId!, signal),
     enabled: Boolean(groupId && matchId),
+  });
+}
+
+export function useCreateMatch(groupId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateMatchInput) => createMatch(groupId, input),
+    onSuccess: (match: Match) => {
+      queryClient.setQueryData(queryKeys.matches.detail(groupId, match.id), match);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matches.list(groupId) });
+    },
+  });
+}
+
+/** "Abrir jogo" — SCHEDULED -> OPEN, enrolling active mensalistas/goleiros. */
+export function useOpenMatch(groupId: string, matchId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => openMatch(groupId, matchId),
+    onSuccess: (match: Match) => {
+      queryClient.setQueryData(queryKeys.matches.detail(groupId, matchId), match);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matches.list(groupId) });
+    },
   });
 }

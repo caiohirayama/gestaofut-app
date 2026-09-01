@@ -13,11 +13,14 @@ src/features/matches/
   utils/
     match-lists.ts          upcoming/history/pickNextMatch — puro, sem I/O
     match-datetime.ts       "QUARTA · 19:15", data, hora — puro
+    match-form-datetime.ts  combina data+hora+duração (form) em startsAt/endsAt ISO — puro, mesma lógica de event-form-datetime.ts
     match-labels.ts         labels/variantes de Badge para os enums de status
     participant-summary.ts  contagem confirmados/capacidade, fila ordenada, ofertas ativas, roster do admin
     match-error-message.ts  mensagem amigável para o 409 de "sem vaga"
+  schemas/
+    match-form-schema.ts    Zod para o formulário de criação (data/hora/duração/local)
   hooks/
-    useMatches.ts            lista (sem filtro) + detalhe
+    useMatches.ts            lista (sem filtro) + detalhe + criar + abrir
     useMatchParticipants.ts  lista de participantes + confirm/decline/cancel/request, com polling mais rápido durante uma oferta ativa
     useMyMatchParticipant.ts deriva "minha" participação (groupMemberId → userId → me) + "meu" GroupMember
     useCountdown.ts          deriva {remainingMs, formatted, isExpired} de um instante ISO, nunca guarda o valor como estado próprio
@@ -28,12 +31,37 @@ src/features/matches/
     MatchListRow.tsx               linha da lista de jogos
     ParticipantsAdminPanel.tsx     roster + fila + ofertas ativas para quem tem match.manage
   screens/
-    GamesScreen.tsx                tab "Jogos": próximos + histórico
-    MatchDetailsScreen.tsx         detalhe completo + confirmação + admin
+    GamesScreen.tsx                tab "Jogos": próximos + histórico + botão "Criar jogo" (match.manage)
+    CreateMatchScreen.tsx          "Criar jogo" — data/hora/duração/local, sempre nasce SCHEDULED
+    MatchDetailsScreen.tsx         detalhe completo + confirmação + admin (inclui "Abrir jogo" enquanto SCHEDULED)
     MatchRosterPreviewScreen.tsx   preview da escala + Copiar/Compartilhar
+app/matches/create.tsx             rota de "Criar jogo"
 app/matches/[matchId].tsx          rota (também o alvo de um deep link /matches/{matchId} — ver "Deep link")
 app/matches/[matchId]/roster.tsx   rota do preview de escala — ver "Compartilhar escala"
 ```
+
+## Criar jogo e abrir jogo
+
+Um jogo nasce **SCHEDULED** (`POST /groups/:groupId/matches`, gated por
+`match.manage`) — a mesma capacidade atual do grupo (`regularCapacity`/
+`goalkeeperCapacity`) é congelada nele nesse momento, ver `docs/matches.md`
+do `gestaofut-api`. `CreateMatchScreen` (`app/matches/create.tsx`,
+acessível pelo botão "+" no cabeçalho de `GamesScreen` para quem tem
+`match.manage`) coleta apenas data + horário de início + duração — o mesmo
+padrão de `EventFormScreen`/`event-form-datetime.ts` (sem dependência de
+date/time picker), combinado em `startsAt`/`endsAt` por
+`match-form-datetime.ts`. Local/endereço são opcionais.
+
+Um jogo SCHEDULED ainda não aceita confirmações — **"Abrir jogo"**
+(`POST /groups/:groupId/matches/:matchId/open`) é uma ação separada, no
+próprio painel "Administração" de `MatchDetailsScreen`, que muda o status
+para OPEN e automaticamente inscreve os mensalistas/goleiros ativos como
+PENDING ou WAITLISTED conforme a capacidade — o servidor decide a
+distribuição, nunca o cliente. Não há automação de recorrência (ex.: "todo
+domingo às 19h") no cliente hoje — cada jogo é criado manualmente; se isso
+virar necessidade recorrente, é um formulário adicional em
+`GroupSettingsScreen` (campos de recorrência) mais um agendador do lado da
+API, fora do escopo desta revisão.
 
 ## Por que não há paginação nem filtro de servidor nas listas
 

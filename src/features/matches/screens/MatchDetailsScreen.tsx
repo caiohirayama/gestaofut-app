@@ -1,16 +1,17 @@
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
-import { Badge, Card, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
+import { Badge, Button, Card, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
 import { InfoRow } from '@/components/common/InfoRow';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useActiveGroupPermissions } from '@/features/groups/hooks/useActiveGroupPermissions';
 import { useGroupMembers } from '@/features/groups/hooks/useGroupMembers';
+import { getApiErrorMessage } from '@/services/api/error-message';
 import { useGroupStore } from '@/store/group-store';
 import { spacing } from '@/theme';
 import { ConfirmationButtons } from '../components/ConfirmationButtons';
 import { ParticipantsAdminPanel } from '../components/ParticipantsAdminPanel';
 import { RequestParticipationCard } from '../components/RequestParticipationCard';
-import { useMatch } from '../hooks/useMatches';
+import { useMatch, useOpenMatch } from '../hooks/useMatches';
 import { useMatchParticipants } from '../hooks/useMatchParticipants';
 import { useMyMatchParticipant } from '../hooks/useMyMatchParticipant';
 import { formatMatchDate, formatMatchTime } from '../utils/match-datetime';
@@ -46,6 +47,7 @@ export function MatchDetailsScreen() {
   const { data: myParticipant, myMember } = useMyMatchParticipant(groupId ?? undefined, matchId);
   const { can } = useActiveGroupPermissions();
   const canManage = can('match.manage');
+  const openMutation = useOpenMatch(groupId ?? '', matchId ?? '');
 
   if (isPending) {
     return (
@@ -138,6 +140,24 @@ export function MatchDetailsScreen() {
             <Text variant="bodyStrong" style={{ marginBottom: spacing.md }}>
               Administração
             </Text>
+            {match.status === 'SCHEDULED' ? (
+              <View style={{ marginBottom: spacing.md, gap: spacing.sm }}>
+                <Text variant="caption" color="textSecondary">
+                  O jogo ainda não está aberto para confirmações.
+                </Text>
+                <Button
+                  label="Abrir jogo"
+                  onPress={() => openMutation.mutate()}
+                  loading={openMutation.isPending}
+                  disabled={openMutation.isPending}
+                />
+                {openMutation.isError ? (
+                  <Text variant="caption" color="danger" accessibilityRole="alert">
+                    {getApiErrorMessage(openMutation.error)}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
             <ParticipantsAdminPanel
               participants={participants ?? []}
               members={members ?? []}

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as authEndpoints from '@/services/api/endpoints/auth';
 import * as groupEndpoints from '@/services/api/endpoints/groups';
 import * as matchEndpoints from '@/services/api/endpoints/matches';
@@ -208,5 +208,27 @@ describe('MatchDetailsScreen', () => {
     await waitFor(() => expect(screen.getByText('Administração')).toBeTruthy());
     expect(screen.getByText(/Confirmados \(/)).toBeTruthy();
     expect(screen.getByText(/Goleiros \(/)).toBeTruthy();
+  });
+
+  it('shows an "Abrir jogo" button for a SCHEDULED match when the caller has match.manage', async () => {
+    renderScreen({ role: 'ADMIN', match: baseMatch({ status: 'SCHEDULED' }), participants: [] });
+
+    expect(await screen.findByRole('button', { name: 'Abrir jogo' })).toBeTruthy();
+  });
+
+  it('hides the "Abrir jogo" button once the match is OPEN', async () => {
+    renderScreen({ role: 'ADMIN', match: baseMatch({ status: 'OPEN' }) });
+    await waitFor(() => expect(screen.getByText('Administração')).toBeTruthy());
+
+    expect(screen.queryByRole('button', { name: 'Abrir jogo' })).toBeNull();
+  });
+
+  it('calls openMatch and shows the API error message on failure', async () => {
+    jest.spyOn(matchEndpoints, 'openMatch').mockRejectedValue(new Error('Falha ao abrir jogo'));
+    renderScreen({ role: 'ADMIN', match: baseMatch({ status: 'SCHEDULED' }), participants: [] });
+
+    fireEvent.press(await screen.findByRole('button', { name: 'Abrir jogo' }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
   });
 });

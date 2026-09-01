@@ -72,6 +72,23 @@ export function getMatch(groupId: string, matchId: string, signal?: AbortSignal)
   return apiFetch<Match>(`/groups/${groupId}/matches/${matchId}`, { signal });
 }
 
+export interface CreateMatchInput {
+  startsAt: string;
+  endsAt: string;
+  locationName?: string | null;
+  locationAddress?: string | null;
+}
+
+/** Always starts SCHEDULED, snapshotting the group's current capacity onto it — see gestaofut-api docs/matches.md. Gated by `match.manage`. */
+export function createMatch(groupId: string, input: CreateMatchInput): Promise<Match> {
+  return apiFetch<Match>(`/groups/${groupId}/matches`, { method: 'POST', body: input });
+}
+
+/** SCHEDULED -> OPEN, auto-enrolling active REGULAR/GOALKEEPER members as PENDING/WAITLISTED per capacity — see gestaofut-api docs/matches.md. Gated by `match.manage`. */
+export function openMatch(groupId: string, matchId: string): Promise<Match> {
+  return apiFetch<Match>(`/groups/${groupId}/matches/${matchId}/open`, { method: 'POST' });
+}
+
 export function listMatchParticipants(
   groupId: string,
   matchId: string,

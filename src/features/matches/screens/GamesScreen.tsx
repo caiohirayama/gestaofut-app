@@ -1,11 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, View, type ListRenderItemInfo } from 'react-native';
+import { FlatList, Pressable, View, type ListRenderItemInfo } from 'react-native';
 import { ErrorState, LoadingState, Screen, Text } from '@/components/ui';
 import { ChipSelect } from '@/features/groups/components/ChipSelect';
+import { useActiveGroupPermissions } from '@/features/groups/hooks/useActiveGroupPermissions';
 import type { Match } from '@/services/api/endpoints/matches';
 import { useGroupStore } from '@/store/group-store';
-import { spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 import { MatchListRow } from '../components/MatchListRow';
 import { useMatches } from '../hooks/useMatches';
 import { matchHistory, upcomingMatches } from '../utils/match-lists';
@@ -27,6 +29,8 @@ const TAB_OPTIONS: { value: GamesTab; label: string }[] = [
 export function GamesScreen() {
   const groupId = useGroupStore((state) => state.activeGroupId);
   const { data: matches, isPending, isError, refetch } = useMatches(groupId ?? undefined);
+  const { can } = useActiveGroupPermissions();
+  const canManage = can('match.manage');
   const [tab, setTab] = useState<GamesTab>('UPCOMING');
 
   const list = useMemo(() => {
@@ -70,7 +74,19 @@ export function GamesScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl }}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.md }}>
-            <Text variant="title">Jogos</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text variant="title">Jogos</Text>
+              {canManage ? (
+                <Pressable
+                  onPress={() => router.push('/matches/create')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Criar jogo"
+                  hitSlop={8}
+                >
+                  <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
+                </Pressable>
+              ) : null}
+            </View>
             <ChipSelect options={TAB_OPTIONS} value={tab} onChange={setTab} />
           </View>
         }
