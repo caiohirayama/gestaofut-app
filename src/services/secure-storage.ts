@@ -9,6 +9,8 @@ export const SECURE_KEYS = {
   refreshToken: 'refresh_token',
   /** Last active group id — a convenience pointer, re-validated against the API on load, never trusted for authorization. */
   activeGroupId: 'active_group_id',
+  /** This device's gestaofut-api `PushSubscription.id` — remembered only so a later opt-out can call `revokePushSubscription` without re-deriving the token; never trusted as proof push is actually enabled (the OS permission is). */
+  pushSubscriptionId: 'push_subscription_id',
 } as const;
 
 export async function getSecureItem(key: string): Promise<string | null> {

@@ -40,6 +40,13 @@
         {
           "photosPermission": "O app usa sua galeria de fotos para escolher a imagem do avatar ou do logo do grupo."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "color": "#0F7A4B"
+        }
       ]
     ],
     "experiments": {

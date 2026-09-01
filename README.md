@@ -27,15 +27,18 @@ participantes — ver [docs/events.md](docs/events.md)) e upload de imagens
 (avatar do próprio usuário, logo do grupo quando autorizado — picker do
 Expo, upload direto para o Cloudflare R2 via URL presigned, progresso/erro/
 retry/preview, nenhuma credencial R2 armazenada no app — ver
-[docs/uploads.md](docs/uploads.md)). A Home é construída
-inteiramente sobre o dashboard agregado do `gestaofut-api`, com um layout
-distinto para quem administra (jogo/vagas/espera, sinais financeiros/
-evento, ações rápidas) e para quem só joga (próximo jogo e minha
-confirmação, minha mensalidade, próximo evento) — ver
-[docs/home.md](docs/home.md). Notificações push ainda não existem, mas a
-rota `/matches/{matchId}` já está preparada como alvo de um deep link
-futuro. Veja [docs/architecture.md](docs/architecture.md) para o que vem a
-seguir.
+[docs/uploads.md](docs/uploads.md)) e notificações (push via Expo
+Notifications — pedido de permissão contextual dentro da própria central,
+nunca na primeira tela, registro/atualização/revogação do Expo Push Token,
+deep link direto para o jogo/evento correspondente, tratamento em
+foreground, e uma central in-app simples — não lidas/lidas/marcar como
+lida — ver [docs/notifications.md](docs/notifications.md)). A Home é
+construída inteiramente sobre o dashboard agregado do `gestaofut-api`, com
+um layout distinto para quem administra (jogo/vagas/espera, sinais
+financeiros/evento, ações rápidas) e para quem só joga (próximo jogo e
+minha confirmação, minha mensalidade, próximo evento) — ver
+[docs/home.md](docs/home.md). Veja [docs/architecture.md](docs/architecture.md)
+para o que vem a seguir.
 
 ## Stack
 
@@ -48,6 +51,7 @@ seguir.
 - `decimal.js` (aritmética monetária segura no dashboard financeiro — ver [docs/finance.md](docs/finance.md))
 - `expo-clipboard` ("Copiar" na preview de escala compartilhável — ver [docs/matches.md](docs/matches.md))
 - `expo-image-picker` + `expo-file-system` (upload de avatar/logo direto para o R2 — ver [docs/uploads.md](docs/uploads.md))
+- `expo-notifications` + `expo-device` (push via Expo, Expo Push Token — ver [docs/notifications.md](docs/notifications.md))
 - pnpm
 
 Apenas iOS e Android — sem web/PWA/Next.js.
@@ -101,5 +105,6 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 - [docs/finance.md](docs/finance.md) — mensalidades, cobranças avulsas, pagamentos, pendências
 - [docs/events.md](docs/events.md) — eventos genéricos (churrasco e outros), confirmação, entitlement, admin
 - [docs/uploads.md](docs/uploads.md) — avatar/logo do grupo, picker, upload presigned para o R2, progresso/erro/retry/preview
+- [docs/notifications.md](docs/notifications.md) — push (Expo Notifications), permissão contextual, device, deep link, foreground, central in-app
 - [docs/home.md](docs/home.md) — Home sobre o dashboard agregado, AdminHome vs. MemberHome
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature

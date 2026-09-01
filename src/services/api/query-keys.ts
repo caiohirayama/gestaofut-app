@@ -50,4 +50,9 @@ export const queryKeys = {
   dashboard: {
     detail: (groupId: string) => ['groups', groupId, 'dashboard'] as const,
   },
+  notifications: {
+    /** Root key — pass to `invalidateQueries`/`setQueriesData` to match every `list(...)` variant regardless of `unreadOnly`. */
+    all: ['notifications'] as const,
+    list: (unreadOnly?: boolean) => ['notifications', { unreadOnly: unreadOnly ?? false }] as const,
+  },
 } as const;

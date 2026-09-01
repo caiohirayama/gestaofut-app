@@ -111,10 +111,14 @@ como tab) — ver [events.md](events.md), "Por que não há uma 6ª aba".
 partir de uma linha da `GamesScreen` ou do "Ver detalhes" do card de
 destaque da Home (ver [matches.md](matches.md)). O nome da pasta é
 plural (`matches/`, não `match/`) de propósito: é o mesmo caminho que uma
-futura push notification vai abrir via deep link
-(`gestaofut://matches/{matchId}`, resolvido automaticamente pelo
-`"scheme": "gestaofut"` do `app.json` — ver [matches.md](matches.md),
-"Deep link").
+push notification abre via deep link (`gestaofut://matches/{matchId}`,
+resolvido automaticamente pelo `"scheme": "gestaofut"` do `app.json` — ver
+[matches.md](matches.md), "Deep link", e [notifications.md](notifications.md),
+"DEEP LINKS", agora que o disparo de fato existe).
+
+`notifications.tsx` (a central de notificações) segue o mesmo padrão de
+rota fora de `(app)/` que `group-settings.tsx`/`switch-group.tsx` — ver
+[notifications.md](notifications.md).
 
 `events/[eventId].tsx` (detalhe) e `events/[eventId]/edit.tsx` (edição)
 coexistem sob o mesmo segmento dinâmico — a primeira vez que este app usa

@@ -3,6 +3,7 @@ import { Redirect, Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
 import { useActiveGroupPermissions } from '@/features/groups/hooks/useActiveGroupPermissions';
 import { tabVisibility } from '@/features/groups/utils/tab-visibility';
+import { useAutoRegisterPushDevice } from '@/features/notifications/hooks/useAutoRegisterPushDevice';
 import { useGroupStore } from '@/store/group-store';
 import { colors } from '@/theme';
 
@@ -18,6 +19,7 @@ function tabIcon(name: IconName) {
 export default function AppLayout() {
   const activeGroupId = useGroupStore((state) => state.activeGroupId);
   const { can } = useActiveGroupPermissions();
+  useAutoRegisterPushDevice();
 
   if (!activeGroupId) {
     return <Redirect href="/(group-setup)" />;

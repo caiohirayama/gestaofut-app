@@ -76,7 +76,10 @@ comum. O **access token** vive só em memória, em `useAuthStore.accessToken`
 `activeGroupId` (ver `group-store.ts` acima) também passa por aqui — não
 porque o id de um grupo seja sensível, mas para reaproveitar o único ponto
 de persistência que o projeto já tem, em vez de introduzir `AsyncStorage`
-só para essa conveniência.
+só para essa conveniência. `SECURE_KEYS.pushSubscriptionId` (ver
+[notifications.md](notifications.md), "DEVICE") segue o mesmo racional —
+só um ponteiro para poder chamar `revoke` depois, nunca uma fonte de
+verdade sobre se o push está de fato ativo (isso é sempre o SO).
 
 Fluxo real (`gestaofut-api` já expõe `/auth/*` e `/me`, ver
 [navigation.md](navigation.md)):

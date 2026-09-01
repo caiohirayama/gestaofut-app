@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Badge, Button, Card, Screen, Text } from '@/components/ui';
 import { AvatarPicker } from '@/features/auth/components/AvatarPicker';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
@@ -7,8 +8,9 @@ import { useLogout } from '@/features/auth/hooks/useLogout';
 import { useGroup } from '@/features/groups/hooks/useGroup';
 import { useMyGroups } from '@/features/groups/hooks/useMyGroups';
 import { useApiStatus } from '@/features/home/hooks/useApiStatus';
+import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { useGroupStore } from '@/store/group-store';
-import { spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 export function MoreScreen() {
   const { signOut, isPending: isSigningOut } = useLogout();
@@ -16,6 +18,7 @@ export function MoreScreen() {
   const activeGroupId = useGroupStore((state) => state.activeGroupId);
   const { data: activeGroup } = useGroup(activeGroupId ?? undefined);
   const { groups } = useMyGroups();
+  const { data: unreadNotifications } = useNotifications(true);
   const { data: apiStatus, isPending: isApiStatusPending, isError: isApiStatusError, refetch: refetchApiStatus, isRefetching: isRefetchingApiStatus } =
     useApiStatus();
 
@@ -41,6 +44,21 @@ export function MoreScreen() {
           </Text>
         </Card>
       ) : null}
+
+      <Pressable onPress={() => router.push('/notifications')} accessibilityRole="button">
+        <Card style={{ marginBottom: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
+            <Text variant="bodyStrong" style={{ flex: 1 }}>
+              Notificações
+            </Text>
+            {unreadNotifications && unreadNotifications.length > 0 ? (
+              <Badge label={String(unreadNotifications.length)} variant="danger" />
+            ) : null}
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+          </View>
+        </Card>
+      </Pressable>
 
       {activeGroup ? (
         <Card style={{ marginBottom: spacing.lg }}>

@@ -193,12 +193,15 @@ estável; agora sim, porque uma notificação push precisa apontar para um
 jogo específico). Com o `"scheme": "gestaofut"` já configurado em
 `app.json`, o Expo Router resolve automaticamente
 `gestaofut://matches/{matchId}` para essa mesma tela — nenhuma configuração
-adicional de linking foi necessária. Hoje nada dispara esse deep link
-(não há push notification implementada ainda); a rota só precisa **existir
-e funcionar** de forma que, quando uma notificação futura ("uma vaga abriu
-para você") for implementada, apontar para `/matches/{matchId}` já leve
-direto para `MatchDetailsScreen`, com `ConfirmationButtons` mostrando o
-banner de oferta se for o caso.
+adicional de linking foi necessária.
+
+Quem de fato dispara esse deep link hoje é `useNotificationListeners`
+(ver [notifications.md](notifications.md), "DEEP LINKS") — tocar uma
+notificação de jogo aberto, confirmação pendente, oferta de vaga, oferta
+expirando ou lembrete de jogo (os cinco tipos que carregam `{ matchId }`)
+leva direto para cá, com `ConfirmationButtons` já mostrando o banner de
+oferta se for o caso, exatamente como esta seção previa antes de a
+notificação existir.
 
 ## Detalhes do jogo
 

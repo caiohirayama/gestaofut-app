@@ -22,3 +22,26 @@ jest.mock('expo-file-system', () => ({
     })),
   })),
 }));
+
+// Deterministic defaults for the push notifications flow (docs/notifications.md)
+// — individual tests override these with jest.spyOn/mockResolvedValueOnce.
+jest.mock('expo-device', () => ({
+  isDevice: true,
+}));
+
+jest.mock('expo-constants', () => ({
+  expoConfig: { extra: { eas: { projectId: 'test-project-id' } } },
+  easConfig: null,
+}));
+
+jest.mock('expo-notifications', () => ({
+  getPermissionsAsync: jest.fn(async () => ({ status: 'undetermined' })),
+  requestPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
+  setNotificationChannelAsync: jest.fn(async () => undefined),
+  getExpoPushTokenAsync: jest.fn(async () => ({ data: 'ExponentPushToken[test-device]' })),
+  setNotificationHandler: jest.fn(),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
+  AndroidImportance: { DEFAULT: 3 },
+}));

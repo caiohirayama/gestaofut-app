@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useBootstrapAuth } from '@/hooks/useBootstrapAuth';
+import { useNotificationListeners } from '@/features/notifications/hooks/useNotificationListeners';
 import { queryClient } from '@/services/api/query-client';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -13,6 +14,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   useBootstrapAuth();
+  useNotificationListeners();
   const status = useAuthStore((state) => state.status);
 
   useEffect(() => {

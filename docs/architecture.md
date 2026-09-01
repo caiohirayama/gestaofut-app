@@ -16,8 +16,8 @@ app/                      Expo Router — apenas rotas finas
   (app)/
     _layout.tsx              <Tabs> dinâmicas conforme permissions
     index.tsx, games.tsx, ... → montam telas de src/features/*
-  group-settings.tsx, switch-group.tsx → fora dos grupos de rota acima,
-    empilhadas por cima das tabs (ver docs/navigation.md)
+  group-settings.tsx, switch-group.tsx, notifications.tsx → fora dos grupos
+    de rota acima, empilhadas por cima das tabs (ver docs/navigation.md)
 
 src/
   components/
@@ -157,6 +157,31 @@ ponto de vista arquitetural:
   como tab), `events` vive como uma entrada em `MoreScreen` + um card
   opcional na Home, já que o caso de uso mais frequente (ver o próximo
   evento e confirmar) cabe inteiro no card — ver [events.md](events.md).
+
+## Feature `notifications` (push + central in-app)
+
+Detalhada em [notifications.md](notifications.md); do ponto de vista
+arquitetural:
+
+- **Mesmo racional "genérico + wiring fino" de `uploads`**: `push-permission.ts`/
+  `push-token.ts`/`notification-deep-link.ts` não sabem nada sobre nenhum
+  evento específico (jogo, evento, mensalidade) — só permissão do SO,
+  obtenção de token, e resolução de rota a partir de ids em `data`. Quem
+  liga isso a telas reais são os hooks de mais alto nível
+  (`useRegisterPushDevice`, `useNotificationListeners`,
+  `NotificationsScreen`).
+- **Dois hooks vivem em layouts, não em telas**: `useNotificationListeners`
+  (`app/_layout.tsx`, roda cedo para capturar um cold start por toque em
+  push) e `useAutoRegisterPushDevice` (`app/(app)/_layout.tsx`, só depois
+  de autenticado) — o mesmo padrão de "efeito de app-wide side effect
+  chamado do layout" já usado por `useBootstrapAuth`.
+- **Primeira dependência nova do app para device/permission APIs nativas**
+  (`expo-notifications`, `expo-device`) além das já usadas por `uploads`
+  (`expo-image-picker`, `expo-file-system`).
+- **Deep link resolvido por `data`, não por `NotificationType`** — a rota
+  `/matches/[matchId]` já existia desde `matches` justamente prevendo isso
+  (ver [matches.md](matches.md), "Deep link"); nenhuma rota nova foi
+  necessária além de `/notifications` em si.
 
 ## Por que este é um bom ponto de partida
 
