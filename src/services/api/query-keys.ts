@@ -36,6 +36,8 @@ export const queryKeys = {
     myCharges: (groupId: string) => ['groups', groupId, 'finance', 'charges', 'me'] as const,
     payments: (groupId: string) => ['groups', groupId, 'finance', 'payments'] as const,
     myPayments: (groupId: string) => ['groups', groupId, 'finance', 'payments', 'me'] as const,
+    cashTransactions: (groupId: string) => ['groups', groupId, 'finance', 'cash-transactions'] as const,
+    cashBalance: (groupId: string) => ['groups', groupId, 'finance', 'cash-transactions', 'balance'] as const,
   },
   events: {
     list: (groupId: string) => ['groups', groupId, 'events'] as const,

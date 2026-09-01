@@ -1,6 +1,7 @@
+import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, View, type ListRenderItemInfo } from 'react-native';
-import { ErrorState, LoadingState, Screen, Text } from '@/components/ui';
+import { Button, ErrorState, LoadingState, Screen, Text } from '@/components/ui';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useActiveGroupPermissions } from '@/features/groups/hooks/useActiveGroupPermissions';
 import { useGroupMembers } from '@/features/groups/hooks/useGroupMembers';
@@ -86,7 +87,12 @@ export function FinanceScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl }}
         ListHeaderComponent={
           <View style={{ gap: spacing.lg, marginBottom: spacing.lg }}>
-            <Text variant="title">Financeiro</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text variant="title">Financeiro</Text>
+              <View style={{ width: 96 }}>
+                <Button label="Caixa" variant="secondary" size="md" onPress={() => router.push('/cash-transactions')} />
+              </View>
+            </View>
             <MonthPicker value={month} onChange={setMonth} />
             <FinanceDashboard totals={totals} currency={settings?.currency ?? 'BRL'} />
             <View>

@@ -14,6 +14,22 @@ export function sumMoney(amounts: readonly string[]): string {
 }
 
 /**
+ * A form amount field accepts either `,` or `.` as the decimal separator
+ * (Brazilian keyboards default to `,`) — normalizes to the plain
+ * `NUMERIC(12,2)`-shaped string gestaofut-api expects (e.g. `"60,5"` ->
+ * `"60.50"`). Returns `null` for anything that isn't a valid positive
+ * amount, so the caller can surface a validation error instead of sending a
+ * malformed value.
+ */
+export function normalizeAmountInput(input: string): string | null {
+  const normalized = input.trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  const value = new Decimal(normalized);
+  if (!value.greaterThan(0)) return null;
+  return value.toFixed(2);
+}
+
+/**
  * "Valores em BRL inicialmente, mas respeitar currency fornecida pela
  * API": `currency` always comes from `GroupSettings.currency` (default
  * `'BRL'` server-side, see gestaofut-api docs) — never hardcoded here.

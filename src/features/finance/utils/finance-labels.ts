@@ -1,5 +1,15 @@
 import type { BadgeVariant } from '@/components/ui';
-import type { ChargeType, MonthlyFeeStatus, PaymentMethod, PaymentStatus } from '@/services/api/endpoints/finance';
+import type { ChipOption } from '@/features/groups/components/ChipSelect';
+import type {
+  CashTransactionCategory,
+  CashTransactionStatus,
+  CashTransactionType,
+  ChargeType,
+  MonthlyFeeStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from '@/services/api/endpoints/finance';
+import { CASH_TRANSACTION_CATEGORIES } from '@/services/api/endpoints/finance';
 
 /** Shared by MonthlyFee and Charge — both use the same status enum, see gestaofut-api docs/finance.md. */
 export const FINANCE_STATUS_LABELS: Record<MonthlyFeeStatus, string> = {
@@ -38,4 +48,36 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   CONFIRMED: 'Confirmado',
   CANCELLED: 'Cancelado',
   REFUNDED: 'Estornado',
+};
+
+export const CASH_TRANSACTION_TYPE_LABELS: Record<CashTransactionType, string> = {
+  INCOME: 'Entrada',
+  EXPENSE: 'Saída',
+};
+
+export const CASH_TRANSACTION_CATEGORY_LABELS: Record<CashTransactionCategory, string> = {
+  MONTHLY_FEE: 'Mensalidade',
+  GUEST_FEE: 'Avulso',
+  FIELD_RENTAL: 'Aluguel de campo',
+  BARBECUE: 'Churrasco',
+  REFEREE: 'Arbitragem',
+  BALLS: 'Bolas',
+  UNIFORMS: 'Uniformes',
+  DRINKS: 'Bebidas',
+  OTHER: 'Outro',
+};
+
+export const CASH_TRANSACTION_CATEGORY_OPTIONS: ChipOption<CashTransactionCategory>[] = CASH_TRANSACTION_CATEGORIES.map((value) => ({
+  value,
+  label: CASH_TRANSACTION_CATEGORY_LABELS[value],
+}));
+
+export const CASH_TRANSACTION_STATUS_LABELS: Record<CashTransactionStatus, string> = {
+  CONFIRMED: 'Confirmado',
+  CANCELLED: 'Cancelado',
+};
+
+export const CASH_TRANSACTION_STATUS_BADGE_VARIANT: Record<CashTransactionStatus, BadgeVariant> = {
+  CONFIRMED: 'success',
+  CANCELLED: 'neutral',
 };

@@ -100,6 +100,7 @@ describe('FinanceScreen — ADMIN', () => {
     renderScreen({ monthlyFees: [fee({ status: 'PAID' }), fee({ id: 'fee-2', status: 'CANCELLED' })] });
 
     expect(await screen.findByText('Financeiro')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Caixa' })).toBeTruthy();
     expect(screen.getByText('Previsto')).toBeTruthy();
     expect(screen.getByText('Recebido')).toBeTruthy();
     // "Pendente" also names a status-filter chip and (depending on the

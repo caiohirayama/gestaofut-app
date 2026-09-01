@@ -33,6 +33,8 @@ app/
   events/[eventId].tsx    EventDetailScreen — idem, mesmo padrão de rota dinâmica
   events/create.tsx       EventFormScreen (modo criação) — idem
   events/[eventId]/edit.tsx  EventFormScreen (modo edição) — idem
+  cash-transactions/index.tsx   CashTransactionsScreen — CAIXA, alcançada pelo botão "Caixa" em FinanceScreen (ver docs/finance.md)
+  cash-transactions/create.tsx  CashExpenseFormScreen — "+ Nova despesa"/"+ Novo lançamento", idem
 ```
 
 ## Como a sessão decide o grupo
@@ -86,18 +88,20 @@ já têm telas reais.
 
 `app/group-settings.tsx`, `app/switch-group.tsx`, `app/add-player.tsx`,
 `app/my-finance.tsx`, `app/player/[memberId].tsx`,
-`app/matches/[matchId].tsx` e `app/events/**` ficam soltas na raiz de
-`app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`), não dentro de `(app)/`:
+`app/matches/[matchId].tsx`, `app/events/**` e `app/cash-transactions/**`
+ficam soltas na raiz de `app/` (irmãs de `(auth)`/`(group-setup)`/`(app)`),
+não dentro de `(app)/`:
 uma tela alcançada por `router.push` a partir de dentro de uma tab (ex.:
 "Adicionar jogador", tocar numa linha da lista de jogadores, ou tocar no
 card de destaque/numa linha da lista de jogos) precisa estar registrada no
 `<Stack>` raiz, não na lista fixa de `<Tabs.Screen>` — é o padrão
 recomendado do Expo Router para uma tela "de detalhe" que empilha por cima
-da barra de tabs em vez de substituí-la. `my-finance.tsx` e `events/index.tsx`
+da barra de tabs em vez de substituí-la. `my-finance.tsx`, `events/index.tsx` e `cash-transactions/index.tsx`
 seguem essa mesma regra mesmo não tendo uma linha/card específico que leve
 até elas — são alcançadas por botões em `MoreScreen` ("Meu financeiro" /
-"Eventos"), mas continuam sendo telas empilhadas, não tabs (ver
-[finance.md](finance.md) e [events.md](events.md)). Eventos deliberadamente
+"Eventos") ou em `FinanceScreen` ("Caixa"), mas continuam sendo telas
+empilhadas, não tabs (ver [finance.md](finance.md) e [events.md](events.md)).
+Eventos deliberadamente
 **não** virou uma 6ª tab (diferente de Financeiro, pedido explicitamente
 como tab) — ver [events.md](events.md), "Por que não há uma 6ª aba".
 

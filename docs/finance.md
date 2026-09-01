@@ -13,21 +13,32 @@ src/features/finance/
     finance-labels.ts     labels/variantes de Badge para status/tipo/método
     finance-datetime.ts   mês corrente, formatação e navegação de (ano, mês)
     finance-summary.ts    dashboard (previsto/recebido/pendente/avulsos) + lista unificada filtrável
+    cash-transaction-summary.ts   CAIXA: entradas/saídas do mês + filtro categoria/período
+  schemas/
+    cash-expense-form-schema.ts   validação da "Nova despesa" (zod)
   hooks/
     useMonthlyFees.ts    lista (admin) + "minha" (self) + waive/cancel
     useCharges.ts        idem, para cobranças avulsas
     usePayments.ts       lista (admin) + "meus" (self) + registrar pagamento manual
+    useCashTransactions.ts   CAIXA: lista + saldo + criar despesa manual + estornar
   components/
     FinanceDashboard.tsx    os quatro cartões do dashboard mensal
-    MonthPicker.tsx         seletor de mês (‹ Mês Ano ›)
+    MonthPicker.tsx         seletor de mês (‹ Mês Ano ›) — reaproveitado pelo caixa
     FinanceFilters.tsx      status / tipo / jogador
     PendingItemRow.tsx      uma mensalidade/cobrança + "Registrar pagamento" (finance.manage)
     PaymentRow.tsx          uma linha de pagamento, somente leitura
+    CashBalanceSummary.tsx    saldo atual + entradas/saídas do mês
+    CashTransactionFilters.tsx   filtro de categoria do caixa
+    CashTransactionRow.tsx    uma linha do caixa + "Estornar" (finance.manage)
   screens/
-    FinanceScreen.tsx     ADMIN: dashboard + filtros + lista de pendências
+    FinanceScreen.tsx     ADMIN: dashboard + filtros + lista de pendências (+ botão "Caixa")
     MyFinanceScreen.tsx   JOGADOR: minha mensalidade / meus avulsos / meus pagamentos / minhas pendências
+    CashTransactionsScreen.tsx   CAIXA: saldo + lista + "+ Nova despesa"/"+ Novo lançamento"
+    CashExpenseFormScreen.tsx    formulário único de lançamento manual (sempre EXPENSE)
 app/(app)/finance.tsx   tab "Financeiro" (gated por finance.read, ver docs/navigation.md)
 app/my-finance.tsx      rota "Meu financeiro", fora das tabs (alcançada por MoreScreen)
+app/cash-transactions/index.tsx   rota "Caixa", fora das tabs (alcançada por FinanceScreen)
+app/cash-transactions/create.tsx  rota do formulário de despesa manual
 ```
 
 ## ADMIN: tab "Financeiro"
@@ -185,6 +196,86 @@ símbolo/formato mudam. Somas feitas no cliente (os quatro totais do
 dashboard) passam por `sumMoney` (`decimal.js`), nunca `Number(...)` /
 `+` direto sobre a string `NUMERIC` que a API devolve — mesmo racional do
 `gestaofut-api` (ver seu `docs/database.md`/`docs/finance.md`).
+
+## CAIXA
+
+Consome `gestaofut-api`'s `finance` module extension (ver `gestaofut-api
+docs/finance.md`, "CAIXA") — nenhum campo/regra novo inventado no cliente:
+INCOME só nasce de um pagamento confirmado (não há botão para isso aqui),
+EXPENSE só nasce manualmente via `finance.manage`, e um lançamento nunca é
+deletado, só cancelado/estornado.
+
+Alcançado por um botão "Caixa" no cabeçalho de `FinanceScreen` (mesmo
+gate `finance.read` da tab — a tela em si não repete a checagem de
+permissão para renderizar, mesma convenção do resto do módulo).
+
+### Saldo atual / Entradas do mês / Saídas do mês
+
+`CashBalanceSummary` mistura duas fontes deliberadamente diferentes:
+
+| Cartão | Origem |
+| --- | --- |
+| Saldo atual | `GET .../cash-transactions/balance` — `SUM(INCOME) - SUM(EXPENSE)` **de todo o histórico**, calculado no servidor (Postgres), nunca no cliente |
+| Entradas do mês | `computeCashMonthSummary` (`cash-transaction-summary.ts`) — soma no cliente, via `sumMoney`, das linhas `CONFIRMED` do mês selecionado (`MonthPicker`) |
+| Saídas do mês | idem, para `EXPENSE` |
+
+O saldo é sempre a resposta do servidor, nunca recomputado localmente — a
+mesma razão do `gestaofut-api` (`docs/finance.md`, "CAIXA"): o livro não
+tem recorte de tempo, então somar tudo no cliente a cada abertura da tela
+cresceria sem limite. Já "entradas/saídas do mês" não têm um endpoint
+dedicado (a API só agrega o saldo all-time), então esses dois números
+saem da mesma lista já buscada para a tabela abaixo — mesmo racional do
+`computeDashboardTotals` da tela de pendências.
+
+### Lista de lançamentos e filtros
+
+`GET .../cash-transactions` é buscado **sem filtro de servidor**
+(`useCashTransactions`, sem parâmetros) — a API aceita `type`/`category`/
+`status` por query, mas não período; como o cliente já precisa buscar tudo
+para computar "entradas/saídas do mês" de qualquer forma, filtrar
+categoria/período no cliente (`filterCashTransactions`) evita uma segunda
+busca. "Filtros: categoria; período" —a categoria é um `ChipSelect`
+(`CashTransactionFilters`), o período reaproveita o `MonthPicker` já
+existente (mesmo componente que já dirige o dashboard de pendências).
+
+### "+ Nova despesa" / "+ Novo lançamento" (`finance.manage`)
+
+Os dois botões pedidos abrem o **mesmo** formulário
+(`CashExpenseFormScreen`) — não há duas ações distintas porque a API só
+tem um caminho de criação manual, e esse caminho só cria `EXPENSE` (ver
+`gestaofut-api docs/finance.md`, "CAIXA": INCOME só nasce de um pagamento
+confirmado). Duplicar a UI para uma capacidade que só existe de um jeito
+adicionaria confusão, não opções reais.
+
+Campos: categoria (`ChipSelect`, mesmo enum do servidor), valor (aceita
+`,` ou `.` como separador decimal — `normalizeAmountInput`, `decimal.js`,
+nunca `Number(...)`), data (`DD/MM/AAAA`, opcional — vazio significa "hoje"
+e o campo é simplesmente omitido do corpo da requisição, deixando o
+servidor aplicar o próprio default) e descrição (opcional).
+
+### CANCELAMENTO/ESTORNO — "não permitir delete simples"
+
+`CashTransactionRow` nunca oferece excluir nada. A única ação é
+"Estornar", atrás de uma confirmação nativa (`Alert.alert`, mesmo padrão
+de "Registrar pagamento" em `PendingItemRow`) — e só aparece para uma
+linha `CONFIRMED` **registrada manualmente** (`paymentId === null`) quando
+o viewer tem `finance.manage`. Uma linha gerada por um pagamento
+(`paymentId` preenchido) mostra uma dica em texto ("Gerado por um
+pagamento — estorne o pagamento para cancelar") em vez de um botão — a API
+rejeita um cancelamento direto nesse caso (`ValidationError`), e replicar
+esse mesmo caminho de erro na UI sem contexto seria pior do que já não
+oferecer a ação.
+
+### PERMISSIONS e mutations testados
+
+`CashTransactionsScreen.test.tsx`/`CashTransactionRow.test.tsx` cobrem: os
+dois botões de criação somem para quem não tem `finance.manage` (mesmo
+quando a tela é renderizada diretamente — o gate real é o 403 da API, a
+tab é só UX); "Estornar" só aparece para uma linha `CONFIRMED`/
+`paymentId === null` com `finance.manage`; a confirmação nativa precede
+toda chamada de mutação; um erro de rede mostra uma linha inline. Testes
+de `useCashTransactions.ts` cobrem a invalidação de `cash-transactions` e
+`cash-transactions/balance` após criar ou estornar um lançamento.
 
 ## Limitações conhecidas do contrato atual
 

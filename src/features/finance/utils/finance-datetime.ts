@@ -34,3 +34,24 @@ export function shiftYearMonth({ year, month }: YearMonth, delta: number): YearM
   const yearOffset = Math.floor(zeroBasedTotal / 12);
   return { year: year + yearOffset, month: normalizedMonth + 1 };
 }
+
+/**
+ * The "Nova despesa" form's optional `occurredAt` field: an empty string
+ * means "hoje" (the caller omits the field entirely — gestaofut-api's
+ * route defaults it to `new Date()`), `DD/MM/AAAA` becomes an ISO datetime,
+ * and anything else is invalid.
+ */
+export function parseOccurredAtInput(input: string): { ok: true; isoDate: string | undefined } | { ok: false } {
+  const trimmed = input.trim();
+  if (!trimmed) return { ok: true, isoDate: undefined };
+
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
+  if (!match) return { ok: false };
+
+  const [, day, month, year] = match.map(Number) as [number, number, number, number];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return { ok: false };
+  }
+  return { ok: true, isoDate: date.toISOString() };
+}

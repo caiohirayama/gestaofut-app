@@ -1,4 +1,4 @@
-import { currentYearMonth, formatMonthLabel, shiftYearMonth } from './finance-datetime';
+import { currentYearMonth, formatMonthLabel, parseOccurredAtInput, shiftYearMonth } from './finance-datetime';
 
 describe('formatMonthLabel', () => {
   it('formats a (year, month) pair in Portuguese', () => {
@@ -33,5 +33,27 @@ describe('shiftYearMonth', () => {
 describe('currentYearMonth', () => {
   it('derives from the given Date', () => {
     expect(currentYearMonth(new Date('2026-03-15T00:00:00.000Z'))).toEqual({ year: 2026, month: 3 });
+  });
+});
+
+describe('parseOccurredAtInput — "Nova despesa" optional data field', () => {
+  it('treats an empty string as "hoje" (no isoDate — the server defaults it)', () => {
+    expect(parseOccurredAtInput('')).toEqual({ ok: true, isoDate: undefined });
+    expect(parseOccurredAtInput('   ')).toEqual({ ok: true, isoDate: undefined });
+  });
+
+  it('parses a valid DD/MM/AAAA into an ISO datetime', () => {
+    const result = parseOccurredAtInput('05/03/2026');
+    expect(result.ok).toBe(true);
+    expect(result.ok && new Date(result.isoDate!).toISOString().slice(0, 10)).toBe('2026-03-05');
+  });
+
+  it('rejects a malformed date string', () => {
+    expect(parseOccurredAtInput('2026-03-05')).toEqual({ ok: false });
+    expect(parseOccurredAtInput('not a date')).toEqual({ ok: false });
+  });
+
+  it('rejects a calendar-invalid date (e.g. 31/02)', () => {
+    expect(parseOccurredAtInput('31/02/2026')).toEqual({ ok: false });
   });
 });

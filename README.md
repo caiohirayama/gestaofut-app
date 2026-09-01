@@ -14,8 +14,11 @@ copiar, e compartilhamento nativo (WhatsApp incluso quando instalado, sem
 nenhuma integração própria) — ver [docs/matches.md](docs/matches.md)),
 financeiro
 (dashboard mensal e lista de pendências para `finance.read`/`finance.manage`,
-pagamento manual com confirmação, e "Meu financeiro" — mensalidade/avulsos/
-pagamentos/pendências somente do próprio usuário — ver
+pagamento manual com confirmação, "Meu financeiro" — mensalidade/avulsos/
+pagamentos/pendências somente do próprio usuário —, e um caixa simples
+(saldo atual, entradas/saídas do mês, filtro por categoria/período, "+ Nova
+despesa"/"+ Novo lançamento" para `finance.manage`, sempre com
+cancelamento/estorno confirmado — nunca um delete — ver
 [docs/finance.md](docs/finance.md)) e eventos (churrasco e outros tipos
 genéricos — evento em destaque na Home, lista/histórico, confirmação de
 presença, "Incluso na mensalidade" para quem tem direito ao benefício, e
