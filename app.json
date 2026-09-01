@@ -38,7 +38,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "O app usa sua galeria de fotos para escolher a imagem do avatar ou do logo do grupo."
+          "photosPermission": "O app usa sua galeria de fotos para escolher a imagem do avatar ou do logo do grupo.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [

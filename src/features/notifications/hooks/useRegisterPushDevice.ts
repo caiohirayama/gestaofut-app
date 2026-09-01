@@ -36,6 +36,21 @@ export interface UseRegisterPushDeviceResult {
   revoke: () => Promise<void>;
 }
 
+/**
+ * Extracted as a plain function (not just inlined in the hook below) so
+ * `useLogout` can also call it — logging out must revoke this device's
+ * push subscription too, or a signed-out user keeps receiving pushes
+ * about a group they can no longer see in the app (see docs/security-review.md,
+ * "Push"). Best-effort, same as the hook's own `revoke`.
+ */
+export async function revokeCurrentDevicePushSubscription(): Promise<void> {
+  const subscriptionId = await getSecureItem(SECURE_KEYS.pushSubscriptionId).catch(() => null);
+  if (subscriptionId) {
+    await revokePushSubscription(subscriptionId).catch(() => {});
+    await deleteSecureItem(SECURE_KEYS.pushSubscriptionId).catch(() => {});
+  }
+}
+
 export function useRegisterPushDevice(): UseRegisterPushDeviceResult {
   const [stage, setStage] = useState<RegisterPushDeviceStage>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,11 +84,7 @@ export function useRegisterPushDevice(): UseRegisterPushDeviceResult {
   const revoke = useCallback(async () => {
     setIsRevoking(true);
     try {
-      const subscriptionId = await getSecureItem(SECURE_KEYS.pushSubscriptionId).catch(() => null);
-      if (subscriptionId) {
-        await revokePushSubscription(subscriptionId).catch(() => {});
-        await deleteSecureItem(SECURE_KEYS.pushSubscriptionId).catch(() => {});
-      }
+      await revokeCurrentDevicePushSubscription();
       setStage('idle');
     } finally {
       setIsRevoking(false);

@@ -45,6 +45,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             onBlur?.(event);
           }}
           accessibilityState={{ disabled: rest.editable === false }}
+          // The visible `label`/`error` above are plain sibling <Text>, never
+          // programmatically linked to this field the way an HTML <label
+          // for> would be — without this, a screen reader announces the
+          // field with no context at all. `{...rest}` still wins if a
+          // caller passes its own `accessibilityLabel`.
+          accessibilityLabel={error ? `${label ?? ''}. ${error}`.trim() : label}
           {...rest}
         />
         {rightAccessory ? <View style={styles.accessory}>{rightAccessory}</View> : null}

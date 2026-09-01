@@ -28,9 +28,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# env
-.env
-.env.*.local
+# env — every variant (.env, .env.development, .env.production, .env.*.local),
+# never just .env/.env.*.local — see docs/security-review.md
+.env*
+!.env.example
 
 # typescript
 *.tsbuildinfo

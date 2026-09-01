@@ -12,7 +12,8 @@ export const colors = {
 
   textPrimary: '#12161C',
   textSecondary: '#5B6472',
-  textTertiary: '#8A93A2',
+  /** Darkened from the original #8A93A2 (~3.1:1 on white) to meet WCAG AA's 4.5:1 for normal text — this token is used for real, readable text (timestamps, captions), not just decorative icon tints. See docs/security-review.md, "Accessibility". */
+  textTertiary: '#6B7480',
   textInverse: '#FFFFFF',
 
   primary: '#0F7A4B',

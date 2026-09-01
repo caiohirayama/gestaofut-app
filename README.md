@@ -107,4 +107,6 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 - [docs/uploads.md](docs/uploads.md) — avatar/logo do grupo, picker, upload presigned para o R2, progresso/erro/retry/preview
 - [docs/notifications.md](docs/notifications.md) — push (Expo Notifications), permissão contextual, device, deep link, foreground, central in-app
 - [docs/home.md](docs/home.md) — Home sobre o dashboard agregado, AdminHome vs. MemberHome
+- [docs/security-review.md](docs/security-review.md) — revisão de segurança completa (achados, severidade, correções)
+- [docs/release.md](docs/release.md) — EAS Build (development/preview/production), identificadores por ambiente
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature
