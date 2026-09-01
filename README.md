@@ -8,8 +8,11 @@ esportivos recorrentes. Já implementados: autenticação real contra o
 dinâmicas por permission — ver [docs/multi-tenancy.md](docs/multi-tenancy.md))
 jogos (próximo jogo em destaque na Home, lista/histórico, detalhes,
 confirmação de presença, entrada self-service de avulsos com fila de
-espera e ofertas de vaga com contador, e painel administrativo com fila/
-ordem/ofertas ativas — ver [docs/matches.md](docs/matches.md)), financeiro
+espera e ofertas de vaga com contador, painel administrativo com fila/
+ordem/ofertas ativas, e "Compartilhar escala" — preview real da API,
+copiar, e compartilhamento nativo (WhatsApp incluso quando instalado, sem
+nenhuma integração própria) — ver [docs/matches.md](docs/matches.md)),
+financeiro
 (dashboard mensal e lista de pendências para `finance.read`/`finance.manage`,
 pagamento manual com confirmação, e "Meu financeiro" — mensalidade/avulsos/
 pagamentos/pendências somente do próprio usuário — ver
@@ -36,6 +39,7 @@ seguir.
 - React Hook Form + Zod (formulários e validação)
 - Expo SecureStore (tokens sensíveis)
 - `decimal.js` (aritmética monetária segura no dashboard financeiro — ver [docs/finance.md](docs/finance.md))
+- `expo-clipboard` ("Copiar" na preview de escala compartilhável — ver [docs/matches.md](docs/matches.md))
 - pnpm
 
 Apenas iOS e Android — sem web/PWA/Next.js.

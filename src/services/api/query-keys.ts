@@ -27,6 +27,7 @@ export const queryKeys = {
     detail: (groupId: string, matchId: string) => ['groups', groupId, 'matches', matchId] as const,
     participants: (groupId: string, matchId: string) =>
       ['groups', groupId, 'matches', matchId, 'participants'] as const,
+    roster: (groupId: string, matchId: string) => ['groups', groupId, 'matches', matchId, 'roster'] as const,
   },
   finance: {
     monthlyFees: (groupId: string) => ['groups', groupId, 'finance', 'monthly-fees'] as const,

@@ -132,3 +132,13 @@ export function cancelMatchParticipant(
     { method: 'POST' },
   );
 }
+
+/**
+ * "Compartilhar escala" — a ready-to-share text roster (mensalistas/GK/
+ * avulsos/fila), gated server-side by `match.manage` (not just
+ * `match.read`, since it includes a paid/unpaid mark — see gestaofut-api
+ * docs/matches.md, "ESCALA COMPARTILHÁVEL"). Never phone/email/amounts.
+ */
+export function getMatchRosterPreview(groupId: string, matchId: string, signal?: AbortSignal): Promise<{ text: string }> {
+  return apiFetch<{ text: string }>(`/groups/${groupId}/matches/${matchId}/roster`, { signal });
+}

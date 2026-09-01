@@ -21,15 +21,18 @@ src/features/matches/
     useMatchParticipants.ts  lista de participantes + confirm/decline/cancel/request, com polling mais rápido durante uma oferta ativa
     useMyMatchParticipant.ts deriva "minha" participação (groupMemberId → userId → me) + "meu" GroupMember
     useCountdown.ts          deriva {remainingMs, formatted, isExpired} de um instante ISO, nunca guarda o valor como estado próprio
+    useMatchRoster.ts        "Compartilhar escala" — busca o texto pronto da API, sem transformação nenhuma no cliente
   components/
     ConfirmationButtons.tsx        "Vou jogar" / "Não vou" / fila / oferta — o núcleo da feature
     RequestParticipationCard.tsx   "Entrar no jogo" self-service para avulsos (GUEST) sem registro ainda
     MatchListRow.tsx               linha da lista de jogos
     ParticipantsAdminPanel.tsx     roster + fila + ofertas ativas para quem tem match.manage
   screens/
-    GamesScreen.tsx          tab "Jogos": próximos + histórico
-    MatchDetailsScreen.tsx   detalhe completo + confirmação + admin
-app/matches/[matchId].tsx   rota (também o alvo de um deep link /matches/{matchId} — ver "Deep link")
+    GamesScreen.tsx                tab "Jogos": próximos + histórico
+    MatchDetailsScreen.tsx         detalhe completo + confirmação + admin
+    MatchRosterPreviewScreen.tsx   preview da escala + Copiar/Compartilhar
+app/matches/[matchId].tsx          rota (também o alvo de um deep link /matches/{matchId} — ver "Deep link")
+app/matches/[matchId]/roster.tsx   rota do preview de escala — ver "Compartilhar escala"
 ```
 
 ## Por que não há paginação nem filtro de servidor nas listas
@@ -251,6 +254,60 @@ API já expõe (remover/adicionar/reordenar a fila manualmente, ver
 `gestaofut-api docs/matches.md`, "ADMIN") — é só leitura por enquanto; a
 seção existe para o pedido atual ("mostrar fila, ordem, ofertas ativas"),
 não para editá-las.
+
+## Compartilhar escala
+
+A ação "Compartilhar" do `AdminHome` (ver [home.md](home.md)) não abre
+mais o share sheet nativo direto com um resumo montado no cliente — ela
+navega para `MatchRosterPreviewScreen`
+(`app/matches/[matchId]/roster.tsx`), que segue o fluxo pedido:
+
+1. **Solicitar preview à API** — `useMatchRosterPreview` (uma `useQuery`
+   comum) dispara `GET .../matches/:matchId/roster` assim que a tela monta.
+2. **Abrir o preview** — a própria tela mostra loading (`"Gerando
+   escala..."`) e, quando pronto, **o texto exatamente como veio da API**,
+   sem nenhuma transformação no cliente — "o admin vê exatamente o texto
+   antes de compartilhar" é literal: não existe um passo intermediário que
+   resuma/reformate.
+3. **Copiar** — `expo-clipboard`'s `setStringAsync(text)`; o botão mostra
+   "Copiado!" por 2s (estado local, `setTimeout`) antes de voltar a
+   "Copiar".
+4. **Compartilhar** — `Share.share({ message: text })`, a API nativa do
+   React Native. O WhatsApp aparece nessa folha de compartilhamento
+   sozinho, quando instalado no aparelho — **nenhuma integração própria
+   com a API do WhatsApp existe nem foi adicionada**; o app não sabe (nem
+   precisa saber) para onde o texto acabou indo.
+
+**Não expõe nada além do texto e dos dois botões** — sem `matchId`, sem
+contagens administrativas, sem nenhum dado que o próprio texto já não
+tivesse (e o texto em si já é seguro por construção, ver
+`gestaofut-api docs/matches.md`, "PRIVACIDADE": sem telefone/email/valor
+devido).
+
+### Por que a ação só aparece com um próximo jogo, e some sem `match.manage`
+
+A ação "Compartilhar" em `AdminHome` (`src/features/home/components/AdminHome.tsx`)
+agora exige explicitamente `can('match.manage')` — antes ela não tinha
+gate nenhum, porque só compartilhava um resumo genérico já visível a
+qualquer um. Como a rota real (`GET .../roster`) é gated por
+`match.manage` no servidor (ver `gestaofut-api docs/matches.md`, "ESCALA
+COMPARTILHÁVEL" — inclui um sinal de pago/não-pago, uma divulgação
+financeira mínima), esconder o botão para quem não tem essa permission
+evita um 403 inútil. A ação também só aparece quando
+`dashboard.nextMatch` existe — sem jogo, não há escala para gerar.
+
+### TESTES
+
+- `useMatchRoster.test.tsx` — a query em si (habilitação condicional,
+  propagação de erro).
+- `MatchRosterPreviewScreen.test.tsx` — geração (loading → texto exato),
+  erro (genérico e o 403 de permissão, com retry), copiar (clipboard +
+  feedback temporário), compartilhar (payload exato para `Share.share`,
+  e que uma folha de compartilhamento cancelada não vira um erro exibido),
+  e a ausência de qualquer metadado administrativo na tela.
+- `AdminHome.test.tsx` — a ação só aparece com `match.manage` **e** um
+  próximo jogo; ao pressionar, navega para a rota de preview com o
+  `matchId` certo (nunca compartilha direto da Home).
 
 ## Limitações conhecidas do contrato atual
 

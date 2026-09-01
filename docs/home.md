@@ -78,11 +78,14 @@ dashboard corporativo cheio de pequenos cards":
 3. **`QuickActionsRow`** — grade 2 colunas, cada ação só aparece se
    `can(...)` autorizar: "Jogador" (`member.manage` → `/add-player`),
    "Pagamento" (`finance.manage` → `/finance`), "Evento" (`event.manage` →
-   `/events/create`); "Compartilhar" (nenhuma permission — abre o share
-   sheet nativo do RN com um resumo do próximo jogo, ou uma frase genérica
-   quando não há jogo). Isso significa que a grade final **varia por
-   papel**: um `ORGANIZER` nunca vê "Pagamento"; um `TREASURER` nunca vê
-   "Jogador"/"Evento" — testado explicitamente em `AdminHome.test.tsx`.
+   `/events/create`); "Compartilhar" (`match.manage` **e** só quando há um
+   `dashboard.nextMatch` — navega para `MatchRosterPreviewScreen`, que
+   busca o texto real da API e só ali chama o share sheet nativo do RN, ver
+   [matches.md](matches.md), "Compartilhar escala"). Isso significa que a
+   grade final **varia por papel**: um `ORGANIZER` nunca vê "Pagamento"; um
+   `TREASURER` (sem `match.manage`) nunca vê "Compartilhar"; um
+   `TREASURER`/qualquer um sem jogo agendado também nunca vê
+   "Compartilhar" — testado explicitamente em `AdminHome.test.tsx`.
 
 ## MEMBER HOME — "ver principalmente sua participação"
 

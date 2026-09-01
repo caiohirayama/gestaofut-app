@@ -1,8 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Share } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as authEndpoints from '@/services/api/endpoints/auth';
-import type { Dashboard } from '@/services/api/endpoints/dashboard';
+import type { Dashboard, DashboardNextMatch } from '@/services/api/endpoints/dashboard';
 import * as groupEndpoints from '@/services/api/endpoints/groups';
 import * as organizationEndpoints from '@/services/api/endpoints/organizations';
 import { useAuthStore } from '@/store/auth-store';
@@ -19,8 +18,27 @@ const GROUP_ID = 'group-1';
 const ORG_ID = 'org-1';
 const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
 
+function nextMatch(overrides: Partial<DashboardNextMatch> = {}): DashboardNextMatch {
+  return {
+    id: 'match-1',
+    startsAt: '2026-08-12T18:00:00.000Z',
+    endsAt: '2026-08-12T19:00:00.000Z',
+    status: 'OPEN',
+    locationName: 'Quadra Central',
+    regularCapacity: 20,
+    goalkeeperCapacity: 2,
+    confirmed: 18,
+    pending: 2,
+    absent: 0,
+    goalkeepers: 1,
+    guests: 1,
+    waitlisted: 0,
+    ...overrides,
+  };
+}
+
 function baseDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
-  return { alerts: {}, ...overrides };
+  return { alerts: {}, nextMatch: nextMatch(), ...overrides };
 }
 
 function renderAdminHome(role: 'ORGANIZER' | 'TREASURER' | 'ADMIN', dashboard: Dashboard = baseDashboard()) {
@@ -64,7 +82,7 @@ beforeEach(() => {
 });
 
 describe('AdminHome — permissions gate which quick actions appear', () => {
-  it('ADMIN sees every quick action', async () => {
+  it('ADMIN (has match.manage) sees every quick action, including "Compartilhar", when there is a next match', async () => {
     renderAdminHome('ADMIN');
 
     expect(await screen.findByRole('button', { name: 'Jogador' })).toBeTruthy();
@@ -73,26 +91,29 @@ describe('AdminHome — permissions gate which quick actions appear', () => {
     expect(screen.getByRole('button', { name: 'Compartilhar' })).toBeTruthy();
   });
 
-  it('ORGANIZER (member.manage/match.manage/event.manage, no finance.manage) never sees "Pagamento"', async () => {
+  it('ORGANIZER (member.manage/match.manage/event.manage, no finance.manage) never sees "Pagamento", but does see "Compartilhar" (has match.manage)', async () => {
     renderAdminHome('ORGANIZER');
 
     expect(await screen.findByRole('button', { name: 'Jogador' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Evento' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Compartilhar' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Pagamento' })).toBeNull();
   });
 
-  it('TREASURER (finance.manage only) never sees "Jogador" or "Evento"', async () => {
+  it('TREASURER (finance.manage only, no match.manage) never sees "Jogador", "Evento", or "Compartilhar"', async () => {
     renderAdminHome('TREASURER');
 
     expect(await screen.findByRole('button', { name: 'Pagamento' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Jogador' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Evento' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compartilhar' })).toBeNull();
   });
 
-  it('"Compartilhar" is always visible, regardless of role', async () => {
-    renderAdminHome('TREASURER');
+  it('"Compartilhar" is hidden even for an ADMIN when there is no next match to generate a roster for', async () => {
+    renderAdminHome('ADMIN', baseDashboard({ nextMatch: null }));
 
-    expect(await screen.findByRole('button', { name: 'Compartilhar' })).toBeTruthy();
+    await screen.findByRole('button', { name: 'Jogador' });
+    expect(screen.queryByRole('button', { name: 'Compartilhar' })).toBeNull();
   });
 });
 
@@ -118,45 +139,11 @@ describe('AdminHome — quick action navigation', () => {
     expect(mockPush).toHaveBeenCalledWith('/events/create');
   });
 
-  it('"Compartilhar" opens the native share sheet with the next match summary', async () => {
-    const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
-    renderAdminHome(
-      'ADMIN',
-      baseDashboard({
-        nextMatch: {
-          id: 'match-1',
-          startsAt: '2026-08-12T18:00:00.000Z',
-          endsAt: '2026-08-12T19:00:00.000Z',
-          status: 'OPEN',
-          locationName: 'Quadra Central',
-          regularCapacity: 20,
-          goalkeeperCapacity: 2,
-          confirmed: 18,
-          pending: 2,
-          absent: 0,
-          goalkeepers: 1,
-          guests: 1,
-          waitlisted: 0,
-        },
-      }),
-    );
+  it('"Compartilhar" navigates to the roster preview screen for the current next match — never shares directly from Home', async () => {
+    renderAdminHome('ADMIN', baseDashboard({ nextMatch: nextMatch({ id: 'match-42' }) }));
 
     fireEvent.press(await screen.findByRole('button', { name: 'Compartilhar' }));
 
-    await waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
-    const [{ message }] = shareSpy.mock.calls[0] as [{ message: string }];
-    expect(message).toContain('Quadra Central');
-    expect(message).toContain('18/20');
-  });
-
-  it('"Compartilhar" falls back to a generic message when there is no next match', async () => {
-    const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
-    renderAdminHome('ADMIN', baseDashboard({ nextMatch: null }));
-
-    fireEvent.press(await screen.findByRole('button', { name: 'Compartilhar' }));
-
-    await waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
-    const [{ message }] = shareSpy.mock.calls[0] as [{ message: string }];
-    expect(message).toBe('Ainda não há um próximo jogo agendado.');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/matches/[matchId]/roster', params: { matchId: 'match-42' } });
   });
 });

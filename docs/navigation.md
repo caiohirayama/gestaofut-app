@@ -28,6 +28,7 @@ app/
   my-finance.tsx      MyFinanceScreen — idem (ver docs/finance.md)
   player/[memberId].tsx  PlayerDetailScreen — idem, primeira rota dinâmica do app
   matches/[matchId].tsx  MatchDetailsScreen — idem, mesmo padrão de rota dinâmica
+  matches/[matchId]/roster.tsx  MatchRosterPreviewScreen — "Compartilhar escala" (ver docs/matches.md)
   events/index.tsx        EventsListScreen — idem, alcançada pelo botão "Eventos" em MoreScreen (ver docs/events.md)
   events/[eventId].tsx    EventDetailScreen — idem, mesmo padrão de rota dinâmica
   events/create.tsx       EventFormScreen (modo criação) — idem
@@ -116,6 +117,8 @@ coexistem sob o mesmo segmento dinâmico — a primeira vez que este app usa
 um arquivo dinâmico (`[eventId].tsx`) e uma pasta com o mesmo nome dinâmico
 (`[eventId]/`) lado a lado; o Expo Router resolve isso sem ambiguidade
 porque `/events/{id}` bate no arquivo e `/events/{id}/edit` bate na pasta.
+`matches/[matchId].tsx` + `matches/[matchId]/roster.tsx` seguem o mesmo
+padrão para "Compartilhar escala" (ver [matches.md](matches.md)).
 
 ## Adicionando uma rota nova
 

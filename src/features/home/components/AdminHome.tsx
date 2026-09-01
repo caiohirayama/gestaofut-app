@@ -1,14 +1,12 @@
 import { router } from 'expo-router';
-import { Share, View } from 'react-native';
+import { View } from 'react-native';
 import { useActiveGroupPermissions } from '@/features/groups/hooks/useActiveGroupPermissions';
 import { useGroupSettings } from '@/features/groups/hooks/useGroupSettings';
-import { formatMatchTime } from '@/features/matches/utils/match-datetime';
 import type { Dashboard } from '@/services/api/endpoints/dashboard';
 import { spacing } from '@/theme';
 import { AdminAlertsCard } from './AdminAlertsCard';
 import { AdminNextMatchCard } from './AdminNextMatchCard';
 import { QuickActionsRow, type QuickAction } from './QuickActionsRow';
-import { formatWeekdayShortDate } from '../utils/home-datetime';
 
 export interface AdminHomeProps {
   groupId: string;
@@ -30,24 +28,18 @@ export function AdminHome({ groupId, dashboard }: AdminHomeProps) {
   const currency = settings?.currency ?? 'BRL';
   const nextMatch = dashboard.nextMatch ?? null;
 
-  async function handleShare() {
-    const message = nextMatch
-      ? `⚽ ${formatWeekdayShortDate(nextMatch.startsAt)} às ${formatMatchTime(nextMatch.startsAt)}${
-          nextMatch.locationName ? ` · ${nextMatch.locationName}` : ''
-        } — ${nextMatch.confirmed}${nextMatch.regularCapacity !== null ? `/${nextMatch.regularCapacity}` : ''} confirmados.`
-      : 'Ainda não há um próximo jogo agendado.';
-    try {
-      await Share.share({ message });
-    } catch {
-      // The user backing out of the native share sheet is not an error worth surfacing.
-    }
-  }
-
   const actions: QuickAction[] = [
     can('member.manage') && { key: 'player', icon: 'person-add-outline', label: 'Jogador', onPress: () => router.push('/add-player') },
     can('finance.manage') && { key: 'payment', icon: 'cash-outline', label: 'Pagamento', onPress: () => router.push('/finance') },
     can('event.manage') && { key: 'event', icon: 'flame-outline', label: 'Evento', onPress: () => router.push('/events/create') },
-    { key: 'share', icon: 'share-social-outline', label: 'Compartilhar', onPress: handleShare },
+    // "Compartilhar escala" hits a match.manage-gated endpoint (see gestaofut-api docs/matches.md) and needs an actual match to generate a roster for.
+    can('match.manage') &&
+      nextMatch && {
+        key: 'share',
+        icon: 'share-social-outline',
+        label: 'Compartilhar',
+        onPress: () => router.push({ pathname: '/matches/[matchId]/roster', params: { matchId: nextMatch.id } }),
+      },
   ].filter((action): action is QuickAction => Boolean(action));
 
   return (
