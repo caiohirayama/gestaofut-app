@@ -25,7 +25,6 @@ src/features/events/
     useMyEventParticipant.ts      deriva "minha" participação (groupMemberId → userId → me), mesmo padrão de useMyMatchParticipant
     useMyEventEntitlement.ts      "Incluso na mensalidade" — GET .../entitlements/me
   components/
-    NextEventCard.tsx             card opcional da Home ("quando houver evento próximo")
     EventConfirmationButtons.tsx  "Vou" / "Não vou" / "Não vou mais" — versão mais simples de ConfirmationButtons (sem fila/oferta)
     EventListRow.tsx              linha da lista de eventos
     EventParticipantsPanel.tsx    roster somente leitura para quem tem event.manage
@@ -42,35 +41,32 @@ app/events/[eventId]/edit.tsx     rota de edição (event.manage)
 ## Por que não há uma 6ª aba
 
 Ao contrário de Financeiro (pedido explicitamente como tab), Eventos vive
-como uma entrada em "Mais" (`MoreScreen`) + um card opcional na Home
-(`NextEventCard`) + rotas dedicadas (`app/events/...`). O card da Home
+como uma entrada em "Mais" (`MoreScreen`) + um card na Home (para quem tem
+um evento próximo) + rotas dedicadas (`app/events/...`). O card da Home
 cobre o caso de uso mais frequente (ver o evento em destaque e confirmar
 ali mesmo); a lista completa fica a um toque de distância em "Mais".
 
 ## O evento em destaque (Home)
 
-`NextEventCard` busca a lista completa do grupo (`useEvents`) e escolhe o
-primeiro resultado de `upcomingEvents` (`DRAFT`/`OPEN`/`CLOSED`, ordenado
-por `startsAt` ascendente — partição por `status`, nunca por comparação com
-o relógio do dispositivo, mesmo racional de `match-lists.ts`). Quando não
-há nenhum evento próximo, o componente **não renderiza nada** — diferente
-de `NextMatchCard`, que sempre mostra ao menos um "Nenhum jogo agendado":
-eventos são um destaque opcional, não o centro da tela.
-
-Quando há um evento, mostra exatamente o formato pedido:
-
-```text
-🔥 Churrasco de Agosto
-12/08
-18 confirmados
-```
+Desde a reconstrução da Home sobre o dashboard agregado (ver
+[home.md](home.md)), "qual é o próximo evento" é decidido por
+`gestaofut-api`'s `GET .../dashboard`
+(`EventRepository.findNextUpcoming`, mesmos status `DRAFT`/`OPEN`/`CLOSED`
+que `upcomingEvents` já usava aqui) — não mais um componente buscando a
+lista inteira do grupo (`useEvents`) client-side. `MemberNextEventCard`
+(admin) e a linha correspondente em `AdminAlertsCard` (`src/features/home/`)
+são quem efetivamente mostra isso hoje; quando não há evento próximo,
+nenhum dos dois renderiza um card vazio — eventos continuam sendo um
+destaque opcional, não o centro da tela.
 
 O emoji vem de `EVENT_TYPE_EMOJI[event.type]` — a única variação visual por
 tipo, mantendo o resto do design system idêntico ("identidade visual
 levemente diferente" sem duplicar componentes). A contagem de confirmados
-é uma segunda query independente (`useEventParticipants`), a mesma
-separação de queries que `NextMatchCard` já usa para not acoplar o card à
-lista completa de participantes até que ela seja necessária.
+já vem pronta do dashboard (`nextEvent.confirmed`); o card do jogador ainda
+faz uma segunda query própria (`useMyEventParticipant`/
+`useMyEventEntitlement`) só para a participação/benefício do próprio
+usuário, que o dashboard nunca expõe (ver gestaofut-api docs/dashboard.md
+— o endpoint é sempre agregado, nunca individual).
 
 ## Detalhes do evento
 

@@ -15,7 +15,9 @@ objeto em vez de inventar arrays soltos, para manter invalidação previsível.
 
 Exemplo real (não é feature de negócio, é a validação da própria
 arquitetura): `src/features/home/hooks/useApiStatus.ts` consulta `/health`
-do `gestaofut-api` e `HomeScreen` reage a `isPending`/`isError`/`data`.
+do `gestaofut-api` e `MoreScreen` reage a `isPending`/`isError`/`data`
+(movido de `HomeScreen` quando a Home passou a consumir o dashboard
+agregado — ver [home.md](home.md)).
 
 ### Feedback instantâneo em mutations de baixa latência esperada
 

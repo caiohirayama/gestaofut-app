@@ -44,4 +44,7 @@ export const queryKeys = {
     myEntitlement: (groupId: string, eventId: string) =>
       ['groups', groupId, 'events', eventId, 'entitlements', 'me'] as const,
   },
+  dashboard: {
+    detail: (groupId: string) => ['groups', groupId, 'dashboard'] as const,
+  },
 } as const;

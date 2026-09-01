@@ -18,12 +18,10 @@ src/features/matches/
     match-error-message.ts  mensagem amigável para o 409 de "sem vaga"
   hooks/
     useMatches.ts            lista (sem filtro) + detalhe
-    useNextMatch.ts          deriva o jogo em destaque de useMatches
     useMatchParticipants.ts  lista de participantes + confirm/decline/cancel/request, com polling mais rápido durante uma oferta ativa
     useMyMatchParticipant.ts deriva "minha" participação (groupMemberId → userId → me) + "meu" GroupMember
     useCountdown.ts          deriva {remainingMs, formatted, isExpired} de um instante ISO, nunca guarda o valor como estado próprio
   components/
-    NextMatchCard.tsx              card de destaque da Home
     ConfirmationButtons.tsx        "Vou jogar" / "Não vou" / fila / oferta — o núcleo da feature
     RequestParticipationCard.tsx   "Entrar no jogo" self-service para avulsos (GUEST) sem registro ainda
     MatchListRow.tsx               linha da lista de jogos
@@ -49,28 +47,18 @@ como limitação conhecida, não como algo a contornar agora.
 
 ## O jogo em destaque (Home)
 
-`useNextMatch` pega a lista completa e escolhe o primeiro resultado de
-`upcomingMatches` — que já ordena por `startsAt` ascendente entre
-`SCHEDULED`/`OPEN`/`CLOSED`/`IN_PROGRESS`. Um jogo `IN_PROGRESS` aparece
-primeiro naturalmente mesmo com `startsAt` no passado, porque a ordenação é
-só por `startsAt`, e nunca comparamos contra o relógio do dispositivo —
-quem decide se um jogo já terminou é sempre o `status` que a API manda (ver
-o racional equivalente em `gestaofut-api docs/matches.md`).
-
-`NextMatchCard` (`src/features/matches/components/NextMatchCard.tsx`)
-mostra weekday/hora, o nome do grupo (`useGroup`), o local (se houver) e:
-
-- Se o jogo está `OPEN` e o usuário já tem um registro de participação: a
-  contagem `confirmados / regularCapacity` e `ConfirmationButtons`.
-- Se o jogo está `OPEN`, o usuário **não** tem registro, e é um avulso
-  (`membershipType === 'GUEST'`) ativo: `RequestParticipationCard` — ver
-  "Entrar em um jogo (avulso)" abaixo.
-- Caso contrário: um `Badge` com o status do jogo (ex.: "Agendado"), sem
-  botões — não existe `MatchParticipant` para confirmar antes do jogo ser
-  aberto, ou o usuário não tem como entrar por conta própria.
-
-Um link "Ver detalhes" leva para `MatchDetailsScreen` — a única navegação
-extra, e opcional (a confirmação em si acontece ali mesmo, no card).
+Desde a reconstrução da Home sobre o dashboard agregado (ver
+[home.md](home.md)), quem decide "qual é o próximo jogo" para a Home é
+`gestaofut-api`'s `GET .../dashboard` (`MatchRepository.findNextUpcoming`,
+mesmos status "em aberto" — `SCHEDULED`/`OPEN`/`CLOSED`/`IN_PROGRESS` —
+nunca comparados contra o relógio do dispositivo), não mais um hook
+`useNextMatch` client-side sobre a lista completa. `AdminNextMatchCard` e
+`MemberNextMatchCard` (`src/features/home/components/`) são os cards que
+efetivamente aparecem na Home hoje — `ConfirmationButtons`/
+`RequestParticipationCard` continuam sendo o mesmo núcleo reaproveitado
+descrito abaixo, só que agora acionado a partir desses dois componentes em
+vez de um único `NextMatchCard` genérico. `MatchDetailsScreen` continua
+sendo o destino de "Ver detalhes"/"Ver escala".
 
 ## Entrar em um jogo (avulso) — "REGRA"
 

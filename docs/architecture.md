@@ -67,9 +67,11 @@ Isso já foi seguido ao implementar o módulo de partidas:
 Não é uma feature de produto — existe para provar a arquitetura ponta a
 ponta com algo real e de baixo risco: `src/features/home/hooks/useApiStatus.ts`
 usa TanStack Query para chamar `GET /health` do `gestaofut-api` e
-`HomeScreen` exibe o resultado com os estados loading/error do design
-system. Isso valida cliente HTTP, TanStack Query e design system juntos sem
-inventar dados de negócio.
+`MoreScreen` exibe o resultado com os estados loading/error do design
+system (movido de `HomeScreen` quando a Home passou a ser reconstruída em
+cima do dashboard agregado — ver [home.md](home.md) — e não sobrou espaço
+hierárquico para um card de diagnóstico ali). Isso valida cliente HTTP,
+TanStack Query e design system juntos sem inventar dados de negócio.
 
 ## Feature `groups` (organizations, grupos, permissions)
 

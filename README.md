@@ -17,10 +17,15 @@ pagamentos/pendências somente do próprio usuário — ver
 genéricos — evento em destaque na Home, lista/histórico, confirmação de
 presença, "Incluso na mensalidade" para quem tem direito ao benefício, e
 administração completa — criar/editar/avançar status/cancelar/visualizar
-participantes — ver [docs/events.md](docs/events.md)). Notificações push
-ainda não existem, mas a rota `/matches/{matchId}` já está preparada como
-alvo de um deep link futuro. Veja [docs/architecture.md](docs/architecture.md)
-para o que vem a seguir.
+participantes — ver [docs/events.md](docs/events.md)). A Home é construída
+inteiramente sobre o dashboard agregado do `gestaofut-api`, com um layout
+distinto para quem administra (jogo/vagas/espera, sinais financeiros/
+evento, ações rápidas) e para quem só joga (próximo jogo e minha
+confirmação, minha mensalidade, próximo evento) — ver
+[docs/home.md](docs/home.md). Notificações push ainda não existem, mas a
+rota `/matches/{matchId}` já está preparada como alvo de um deep link
+futuro. Veja [docs/architecture.md](docs/architecture.md) para o que vem a
+seguir.
 
 ## Stack
 
@@ -83,4 +88,5 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 - [docs/matches.md](docs/matches.md) — jogos, confirmação de presença, fila/oferta, admin
 - [docs/finance.md](docs/finance.md) — mensalidades, cobranças avulsas, pagamentos, pendências
 - [docs/events.md](docs/events.md) — eventos genéricos (churrasco e outros), confirmação, entitlement, admin
+- [docs/home.md](docs/home.md) — Home sobre o dashboard agregado, AdminHome vs. MemberHome
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature
