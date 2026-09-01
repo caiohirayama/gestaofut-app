@@ -7,8 +7,17 @@ export interface AuthUser {
   email: string;
   phone: string | null;
   status: 'ACTIVE' | 'BLOCKED' | 'INACTIVE';
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Shared wire shape of every "request an upload URL" endpoint (mirrors gestaofut-api's `imageUploadUrlResponseSchema`) — see docs/uploads.md. */
+export interface UploadUrlResult {
+  uploadUrl: string;
+  key: string;
+  publicUrl: string;
+  expiresAt: string;
 }
 
 export interface AuthResult {
@@ -55,4 +64,14 @@ export function logout(refreshToken: string): Promise<void> {
 
 export function getMe(signal?: AbortSignal): Promise<AuthUser> {
   return apiFetch<AuthUser>('/me', { signal });
+}
+
+/** Step 1 of the avatar upload flow — see docs/uploads.md. */
+export function createAvatarUploadUrl(input: { contentType: string; contentLength: number }): Promise<UploadUrlResult> {
+  return apiFetch<UploadUrlResult>('/me/avatar/upload-url', { method: 'POST', body: input });
+}
+
+/** Step 3: confirms the upload and returns the caller with `avatarUrl` set. */
+export function confirmAvatarUpload(key: string): Promise<AuthUser> {
+  return apiFetch<AuthUser>('/me/avatar/confirm', { method: 'POST', body: { key } });
 }

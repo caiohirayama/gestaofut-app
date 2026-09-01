@@ -27,6 +27,7 @@ function group(id: string, organizationId: string) {
     sportType: 'FOOTBALL' as const,
     timezone: 'America/Sao_Paulo',
     status: 'ACTIVE' as const,
+    logoUrl: null,
     createdAt: '',
     updatedAt: '',
   };

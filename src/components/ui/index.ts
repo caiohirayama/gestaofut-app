@@ -7,5 +7,6 @@ export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { Input, type InputProps } from './Input';
 export { LoadingState } from './LoadingState';
+export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 export { Screen } from './Screen';
 export { Text, type TextProps, type TextVariant } from './Text';

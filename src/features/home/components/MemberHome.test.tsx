@@ -10,7 +10,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { MemberHome } from './MemberHome';
 
 const GROUP_ID = 'group-1';
-const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
+const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, avatarUrl: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
 const myMember: groupEndpoints.GroupMember = {
   id: 'member-me',
   groupId: GROUP_ID,

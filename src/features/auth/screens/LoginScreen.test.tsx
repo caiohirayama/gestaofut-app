@@ -26,7 +26,7 @@ const validUser = {
   id: '1',
   name: 'Ada Lovelace',
   email: 'ada@example.com',
-  phone: null,
+  phone: null, avatarUrl: null,
   status: 'ACTIVE' as const,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',

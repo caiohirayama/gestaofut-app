@@ -23,7 +23,11 @@ cancelamento/estorno confirmado — nunca um delete — ver
 genéricos — evento em destaque na Home, lista/histórico, confirmação de
 presença, "Incluso na mensalidade" para quem tem direito ao benefício, e
 administração completa — criar/editar/avançar status/cancelar/visualizar
-participantes — ver [docs/events.md](docs/events.md)). A Home é construída
+participantes — ver [docs/events.md](docs/events.md)) e upload de imagens
+(avatar do próprio usuário, logo do grupo quando autorizado — picker do
+Expo, upload direto para o Cloudflare R2 via URL presigned, progresso/erro/
+retry/preview, nenhuma credencial R2 armazenada no app — ver
+[docs/uploads.md](docs/uploads.md)). A Home é construída
 inteiramente sobre o dashboard agregado do `gestaofut-api`, com um layout
 distinto para quem administra (jogo/vagas/espera, sinais financeiros/
 evento, ações rápidas) e para quem só joga (próximo jogo e minha
@@ -43,6 +47,7 @@ seguir.
 - Expo SecureStore (tokens sensíveis)
 - `decimal.js` (aritmética monetária segura no dashboard financeiro — ver [docs/finance.md](docs/finance.md))
 - `expo-clipboard` ("Copiar" na preview de escala compartilhável — ver [docs/matches.md](docs/matches.md))
+- `expo-image-picker` + `expo-file-system` (upload de avatar/logo direto para o R2 — ver [docs/uploads.md](docs/uploads.md))
 - pnpm
 
 Apenas iOS e Android — sem web/PWA/Next.js.
@@ -95,5 +100,6 @@ aparecendo ou não conforme as permissions do usuário nesse grupo).
 - [docs/matches.md](docs/matches.md) — jogos, confirmação de presença, fila/oferta, admin
 - [docs/finance.md](docs/finance.md) — mensalidades, cobranças avulsas, pagamentos, pendências
 - [docs/events.md](docs/events.md) — eventos genéricos (churrasco e outros), confirmação, entitlement, admin
+- [docs/uploads.md](docs/uploads.md) — avatar/logo do grupo, picker, upload presigned para o R2, progresso/erro/retry/preview
 - [docs/home.md](docs/home.md) — Home sobre o dashboard agregado, AdminHome vs. MemberHome
 - [docs/development.md](docs/development.md) — ambiente, testes, como adicionar uma feature

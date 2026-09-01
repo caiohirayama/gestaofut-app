@@ -34,7 +34,13 @@
         }
       ],
       "expo-status-bar",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app usa sua galeria de fotos para escolher a imagem do avatar ou do logo do grupo."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

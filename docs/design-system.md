@@ -48,6 +48,7 @@ combinação de versões estiver mais assentada.
 | `LoadingState` | Estado de carregamento de uma seção/tela |
 | `ErrorState` | Estado de erro com retry opcional |
 | `EmptyState` | Estado vazio/"em breve" (reusado por `ComingSoonScreen`) |
+| `ProgressBar` | Barra de progresso determinística (0 a 1) — usada no upload de avatar/logo, ver [docs/uploads.md](docs/uploads.md) |
 
 Todos exportados por `src/components/ui/index.ts`.
 

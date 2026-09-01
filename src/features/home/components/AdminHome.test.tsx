@@ -16,7 +16,7 @@ jest.mock('expo-router', () => ({
 
 const GROUP_ID = 'group-1';
 const ORG_ID = 'org-1';
-const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
+const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, avatarUrl: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
 
 function nextMatch(overrides: Partial<DashboardNextMatch> = {}): DashboardNextMatch {
   return {

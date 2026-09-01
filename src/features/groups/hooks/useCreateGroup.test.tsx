@@ -7,7 +7,7 @@ import * as organizationEndpoints from '@/services/api/endpoints/organizations';
 import { useAuthStore } from '@/store/auth-store';
 import { useCreateGroup } from './useCreateGroup';
 
-const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
+const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, avatarUrl: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
 
 function org(id: string) {
   return { id, name: `Org ${id}`, slug: id, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
@@ -37,7 +37,7 @@ describe('useCreateGroup', () => {
       .mockResolvedValue({ members: [member('org-1', 'OWNER')] });
     const createOrganizationSpy = jest.spyOn(organizationEndpoints, 'createOrganization');
     const createGroupSpy = jest.spyOn(groupEndpoints, 'createGroup').mockResolvedValue({
-      group: { id: 'group-1', organizationId: 'org-1', ...input, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' },
+      group: { id: 'group-1', organizationId: 'org-1', ...input, description: null, status: 'ACTIVE', logoUrl: null, createdAt: '', updatedAt: '' },
     });
 
     const { result } = renderHook(() => useCreateGroup(), { wrapper });
@@ -57,7 +57,7 @@ describe('useCreateGroup', () => {
       .spyOn(organizationEndpoints, 'createOrganization')
       .mockResolvedValue({ organization: org('new-org') });
     const createGroupSpy = jest.spyOn(groupEndpoints, 'createGroup').mockResolvedValue({
-      group: { id: 'group-1', organizationId: 'new-org', ...input, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' },
+      group: { id: 'group-1', organizationId: 'new-org', ...input, description: null, status: 'ACTIVE', logoUrl: null, createdAt: '', updatedAt: '' },
     });
 
     const { result } = renderHook(() => useCreateGroup(), { wrapper });
@@ -79,7 +79,7 @@ describe('useCreateGroup', () => {
       .spyOn(organizationEndpoints, 'createOrganization')
       .mockResolvedValue({ organization: org('new-org') });
     const createGroupSpy = jest.spyOn(groupEndpoints, 'createGroup').mockResolvedValue({
-      group: { id: 'group-1', organizationId: 'new-org', ...input, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' },
+      group: { id: 'group-1', organizationId: 'new-org', ...input, description: null, status: 'ACTIVE', logoUrl: null, createdAt: '', updatedAt: '' },
     });
 
     const { result } = renderHook(() => useCreateGroup(), { wrapper });

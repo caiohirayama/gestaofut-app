@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
-import { Button, Card, ErrorState, Input, LoadingState, Screen, Text } from '@/components/ui';
+import { Avatar, Button, Card, ErrorState, Input, LoadingState, Screen, Text } from '@/components/ui';
 import { getApiErrorMessage } from '@/services/api/error-message';
 import { useGroupStore } from '@/store/group-store';
 import { spacing } from '@/theme';
 import { ChipSelect } from '../components/ChipSelect';
+import { GroupLogoPicker } from '../components/GroupLogoPicker';
 import { useActiveGroupPermissions } from '../hooks/useActiveGroupPermissions';
 import { useGroup, useUpdateGroup } from '../hooks/useGroup';
 import { useGroupSettings, useUpdateGroupSettings } from '../hooks/useGroupSettings';
@@ -56,6 +57,13 @@ export function GroupSettingsScreen() {
       </View>
 
       <View style={{ gap: spacing.lg }}>
+        <Card style={{ alignItems: 'center' }}>
+          {canEdit ? (
+            <GroupLogoPicker groupId={groupId!} name={groupQuery.data.name} logoUrl={groupQuery.data.logoUrl} />
+          ) : (
+            <Avatar uri={groupQuery.data.logoUrl} name={groupQuery.data.name} size={72} />
+          )}
+        </Card>
         <GroupFieldsForm groupId={groupId!} name={groupQuery.data.name} description={groupQuery.data.description} sportType={groupQuery.data.sportType} timezone={groupQuery.data.timezone} canEdit={canEdit} />
         <GroupSettingsForm groupId={groupId!} settings={settingsQuery.data} canEdit={canEdit} />
       </View>

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { Badge, Button, Card, Screen, Text } from '@/components/ui';
+import { AvatarPicker } from '@/features/auth/components/AvatarPicker';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 import { useGroup } from '@/features/groups/hooks/useGroup';
@@ -30,8 +31,11 @@ export function MoreScreen() {
       </View>
 
       {isLoadingUser ? null : user ? (
-        <Card style={{ marginBottom: spacing.lg }}>
-          <Text variant="bodyStrong">{user.name}</Text>
+        <Card style={{ marginBottom: spacing.lg, alignItems: 'center' }}>
+          <AvatarPicker name={user.name} avatarUrl={user.avatarUrl} />
+          <Text variant="bodyStrong" style={{ marginTop: spacing.md }}>
+            {user.name}
+          </Text>
           <Text variant="caption" color="textTertiary" style={{ marginTop: spacing.xs }}>
             {user.email}
           </Text>

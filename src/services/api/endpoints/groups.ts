@@ -26,8 +26,17 @@ export interface Group {
   sportType: SportType;
   timezone: string;
   status: GroupStatus;
+  logoUrl: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Shared wire shape of every "request an upload URL" endpoint (mirrors gestaofut-api's `imageUploadUrlResponseSchema`) — see docs/uploads.md. */
+export interface UploadUrlResult {
+  uploadUrl: string;
+  key: string;
+  publicUrl: string;
+  expiresAt: string;
 }
 
 /** `monthlyFee`/`guestFee` stay as strings (raw NUMERIC) — never parse to number, see gestaofut-api docs/database.md. */
@@ -88,6 +97,19 @@ export interface UpdateGroupInput {
 
 export function updateGroup(groupId: string, input: UpdateGroupInput): Promise<Group> {
   return apiFetch<Group>(`/groups/${groupId}`, { method: 'PATCH', body: input });
+}
+
+/** Step 1 of the group logo upload flow — same `group.update` gate as `updateGroup` — see docs/uploads.md. */
+export function createGroupLogoUploadUrl(
+  groupId: string,
+  input: { contentType: string; contentLength: number },
+): Promise<UploadUrlResult> {
+  return apiFetch<UploadUrlResult>(`/groups/${groupId}/logo/upload-url`, { method: 'POST', body: input });
+}
+
+/** Step 3: confirms the upload and returns the group with `logoUrl` set. */
+export function confirmGroupLogoUpload(groupId: string, key: string): Promise<Group> {
+  return apiFetch<Group>(`/groups/${groupId}/logo/confirm`, { method: 'POST', body: { key } });
 }
 
 export function getGroupSettings(groupId: string, signal?: AbortSignal): Promise<GroupSettings> {

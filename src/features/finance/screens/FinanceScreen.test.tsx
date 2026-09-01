@@ -12,7 +12,7 @@ const me = {
   id: 'me-id',
   name: 'Ada',
   email: 'ada@example.com',
-  phone: null,
+  phone: null, avatarUrl: null,
   status: 'ACTIVE' as const,
   createdAt: '',
   updatedAt: '',

@@ -16,7 +16,7 @@ describe('useRegister', () => {
         id: '1',
         name: 'Ada',
         email: 'ada@example.com',
-        phone: null,
+        phone: null, avatarUrl: null,
         status: 'ACTIVE',
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',

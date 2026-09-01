@@ -21,7 +21,7 @@ jest.mock('expo-router', () => {
   };
 });
 
-const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
+const me = { id: 'me-id', name: 'Ada', email: 'ada@example.com', phone: null, avatarUrl: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
 
 function org(id: string) {
   return { id, name: `Org ${id}`, slug: id, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' };
@@ -36,6 +36,7 @@ function group(id: string, organizationId: string) {
     sportType: 'FOOTBALL' as const,
     timezone: 'America/Sao_Paulo',
     status: 'ACTIVE' as const,
+    logoUrl: null,
     createdAt: '',
     updatedAt: '',
   };
